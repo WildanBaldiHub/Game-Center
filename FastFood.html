@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast Food Simulator - Advanced</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            margin: 0; background-color: #0f172a;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; font-family: 'Nunito', sans-serif; overflow: hidden;
+        }
+        #gameWrapper {
+            position: relative; width: 1024px; height: 680px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8); border-radius: 20px; overflow: hidden;
+        }
+        canvas { display: block; width: 100%; height: 100%; background: #1e293b; cursor: pointer; }
+        
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(15, 23, 42, 0.95); transition: opacity 0.3s; z-index: 10;
+        }
+        .hidden { display: none !important; }
+        h1 { color: #f59e0b; font-size: 4.5em; margin: 0; text-shadow: 0 6px 0 #b45309; text-transform: uppercase; }
+        h2 { color: #fff; font-size: 2em; margin-bottom: 30px; }
+        .btn-group { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        
+        button {
+            background: #f59e0b; color: white; border: none; padding: 15px 35px;
+            font-size: 1.5em; font-family: 'Nunito', sans-serif; font-weight: 900;
+            border-radius: 15px; cursor: pointer; box-shadow: 0 8px 0 #b45309;
+            transition: all 0.1s;
+        }
+        button:hover { transform: translateY(-4px); filter: brightness(1.1); }
+        button:active { transform: translateY(4px); box-shadow: 0 0 0 #b45309; }
+    </style>
+</head>
+<body>
+
+    <div id="gameWrapper">
+        <canvas id="gameCanvas" width="1024" height="680"></canvas>
+        
+        <div id="uiMenu" class="ui-layer">
+            <h1>🍔 BURGER & CO.</h1>
+            <h2>ADVANCED KITCHEN SIMULATOR</h2>
+            <div class="btn-group">
+                <button style="background:#38bdf8; box-shadow:0 8px 0 #0284c7;" onclick="startGame('RELAX')">🌿 RELAX</button>
+                <button style="background:#f59e0b; box-shadow:0 8px 0 #b45309;" onclick="startGame('NORMAL')">🔥 NORMAL</button>
+                <button style="background:#ef4444; box-shadow:0 8px 0 #b91c1c;" onclick="startGame('RUSH')">⚡ RUSH</button>
+            </div>
+        </div>
+
+        <div id="uiGameOver" class="ui-layer hidden">
+            <h1>SHIFT OVER!</h1>
+            <h2 id="finalScoreDisplay">Total Score: 0</h2>
+            <button onclick="returnToMenu()">BACK TO MENU</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- WEB AUDIO API (PROCEDURAL SFX) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'pop') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'success') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'sizzle') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // --- GAME CONFIG & DATA ---
+        const GameState = { MENU: 0, PLAYING: 1, GAMEOVER: 2 };
+        let currentState = GameState.MENU;
+
+        const MODES = {
+            'RELAX': { time: Infinity, drain: 0, spawn: 5000, max: 4 },
+            'NORMAL': { time: 180, drain: 1.5, spawn: 4000, max: 4 },
+            'RUSH': { time: 90, drain: 2.5, spawn: 2500, max: 5 }
+        };
+        let currentMode = 'NORMAL';
+        let gameData = { score: 0, combo: 1, time: 0, active: true };
+
+        // Ingredients Mapping (Raw -> Cooked)
+        const ITEMS = {
+            'BunB': { emo: '🍞', type: 'base' },
+            'MeatRaw': { emo: '🥩', type: 'raw', cooksTo: 'Patty', time: 3 },
+            'Patty': { emo: '🧆', type: 'stack' }, // Cooked Meat
+            'Cheese': { emo: '🧀', type: 'stack' },
+            'Lettuce': { emo: '🥬', type: 'stack' },
+            'Tomato': { emo: '🍅', type: 'stack' },
+            'BunT': { emo: '🍔', type: 'top' },
+            'Bread': { emo: '🥖', type: 'base' },
+            'SausageRaw': { emo: '🥓', type: 'raw', cooksTo: 'Sausage', time: 3 },
+            'Sausage': { emo: '🌭', type: 'stack' }, // Cooked Sausage
+            'Potato': { emo: '🥔', type: 'raw', cooksTo: 'Fries', time: 4 },
+            'Fries': { emo: '🍟', type: 'side' },
+            'Soda': { emo: '🥤', type: 'side' },
+            'Juice': { emo: '🧃', type: 'side' }
+        };
+
+        const RECIPES = [
+            { id: 'Burger', stack: ['BunB', 'Patty', 'BunT'] },
+            { id: 'Cheeseburger', stack: ['BunB', 'Patty', 'Cheese', 'BunT'] },
+            { id: 'Deluxe', stack: ['BunB', 'Patty', 'Cheese', 'Lettuce', 'Tomato', 'BunT'] },
+            { id: 'Hotdog', stack: ['Bread', 'Sausage'] }
+        ];
+
+        // --- LAYOUT DEFINITIONS ---
+        // 1. Order Panel (Top)
+        const PNL_ORDER = { x: 20, y: 70, w: 984, h: 110 };
+        // 2. Cooking Stations
+        let stations = [
+            { id: 'GRILL1', x: 420, y: 440, w: 90, h: 90, type: 'grill', accepts: ['MeatRaw', 'SausageRaw'], item: null, progress: 0, state: 'empty' },
+            { id: 'GRILL2', x: 530, y: 440, w: 90, h: 90, type: 'grill', accepts: ['MeatRaw', 'SausageRaw'], item: null, progress: 0, state: 'empty' },
+            { id: 'FRYER1', x: 640, y: 440, w: 90, h: 90, type: 'fryer', accepts: ['Potato'], item: null, progress: 0, state: 'empty' }
+        ];
+        // 3. Dispensers (Bottom)
+        const dispensers = [
+            { id: 'BunB', x: 30, y: 560 }, { id: 'MeatRaw', x: 120, y: 560 }, { id: 'Cheese', x: 210, y: 560 },
+            { id: 'Lettuce', x: 300, y: 560 }, { id: 'Tomato', x: 390, y: 560 }, { id: 'BunT', x: 480, y: 560 },
+            { id: 'Bread', x: 570, y: 560 }, { id: 'SausageRaw', x: 660, y: 560 }, { id: 'Potato', x: 750, y: 560 },
+            { id: 'Soda', x: 840, y: 560 }, { id: 'Juice', x: 930, y: 560 }
+        ];
+        
+        let tray = { stack: [], sides: [] };
+        let customers = [];
+        let spawnTimer = 0;
+
+        // Visual FX
+        let particles = []; let floatTexts = []; let screenShake = 0; let screenFlash = 0;
+
+        // --- LOGIC FUNCTIONS ---
+        function startGame(mode) {
+            currentMode = mode; let cfg = MODES[mode];
+            gameData = { score: 0, combo: 1, time: cfg.time, active: cfg.time !== Infinity };
+            tray = { stack: [], sides: [] }; customers = []; spawnTimer = 0;
+            stations.forEach(s => { s.item = null; s.state = 'empty'; s.progress = 0; });
+            document.getElementById('uiMenu').classList.add('hidden');
+            document.getElementById('uiGameOver').classList.add('hidden');
+            currentState = GameState.PLAYING; spawnCustomer();
+        }
+
+        function returnToMenu() {
+            document.getElementById('uiGameOver').classList.add('hidden');
+            document.getElementById('uiMenu').classList.remove('hidden');
+            currentState = GameState.MENU;
+        }
+
+        function triggerFX(type, x, y, msg = "") {
+            if (type === 'error') {
+                screenShake = 15; playSound('error');
+                if(msg) floatTexts.push({ text: msg, x: x, y: y, life: 1, c: '#ef4444', s: 30 });
+            } else if (type === 'success') {
+                screenFlash = 1.0; playSound('success');
+                for(let i=0; i<20; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, life: 1, c: '#10b981', s: Math.random()*8+4 });
+                if(msg) floatTexts.push({ text: msg, x: x, y: y, life: 1, c: '#10b981', s: 40 });
+            }
+        }
+
+        function spawnCustomer() {
+            if (customers.length >= MODES[currentMode].max) return;
+            let recipe = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+            let orderSides = [];
+            if (Math.random() > 0.4) orderSides.push('Fries');
+            if (Math.random() > 0.5) orderSides.push(Math.random() > 0.5 ? 'Soda' : 'Juice');
+            
+            customers.push({
+                id: Date.now(), x: 1050, targetX: 50 + (customers.length * 200), y: 220,
+                order: { stack: [...recipe.stack], sides: orderSides },
+                pat: 100, state: 'waiting'
+            });
+        }
+
+        function checkOrder() {
+            if (customers.length === 0 || (tray.stack.length === 0 && tray.sides.length === 0)) return;
+            let cust = customers[0]; let match = true;
+
+            if (cust.order.stack.length !== tray.stack.length) match = false;
+            else for(let i=0; i<tray.stack.length; i++) if (tray.stack[i] !== cust.order.stack[i]) match = false;
+
+            if (cust.order.sides.length !== tray.sides.length) match = false;
+            else {
+                let ts = [...tray.sides].sort(); let cs = [...cust.order.sides].sort();
+                for(let i=0; i<ts.length; i++) if (ts[i] !== cs[i]) match = false;
+            }
+
+            if (match) {
+                let pts = 100 * gameData.combo; gameData.score += pts; gameData.combo++;
+                triggerFX('success', 500, 300, `PERFECT! +${pts}`);
+                if(gameData.active) gameData.time += 3;
+                cust.state = 'leaving'; tray = { stack: [], sides: [] };
+            } else {
+                gameData.combo = 1; triggerFX('error', 500, 300, "WRONG ORDER!");
+            }
+        }
+
+        // --- STRICT LOGICAL STACKING ---
+        function canStack(itemId) {
+            let itemType = ITEMS[itemId].type;
+            let currentStack = tray.stack;
+            
+            if (currentStack.length === 0) {
+                // Must start with base
+                return itemType === 'base';
+            } else {
+                let topItem = currentStack[currentStack.length - 1];
+                let topType = ITEMS[topItem].type;
+
+                // If closed by top bun, nothing else fits
+                if (topType === 'top') return false;
+
+                // Base rules
+                if (itemType === 'base') return false; // Can't add another base
+                if (itemType === 'top' && topItem !== 'BunB' && topItem !== 'Bread') return true; // Can close if there's stuff
+                if (itemType === 'stack') return true; // Can stack ingredients
+            }
+            return false;
+        }
+
+        // --- INPUT HANDLING ---
+        canvas.addEventListener('mousedown', (e) => {
+            if (currentState !== GameState.PLAYING) return;
+            const r = canvas.getBoundingClientRect();
+            const x = (e.clientX - r.left) * (canvas.width / r.width);
+            const y = (e.clientY - r.top) * (canvas.height / r.height);
+
+            // 1. Click Dispensers
+            dispensers.forEach(d => {
+                if (x > d.x && x < d.x + 80 && y > d.y && y < d.y + 80) {
+                    playSound('pop');
+                    let item = ITEMS[d.id];
+                    if (item.type === 'raw') {
+                        // Find empty station
+                        let st = stations.find(s => s.state === 'empty' && s.accepts.includes(d.id));
+                        if (st) { st.item = d.id; st.state = 'cooking'; st.progress = 0; playSound('sizzle'); }
+                        else triggerFX('error', x, y, "NO SPACE!");
+                    } else if (item.type === 'side') {
+                        if (tray.sides.length < 3) tray.sides.push(d.id);
+                        else triggerFX('error', x, y, "TRAY FULL!");
+                    } else {
+                        // Attempt to stack
+                        if (canStack(d.id)) tray.stack.push(d.id);
+                        else triggerFX('error', x, y, "WRONG STACK!");
+                    }
+                }
+            });
+
+            // 2. Click Stations (Retrieve cooked/Trash burnt)
+            stations.forEach(s => {
+                if (x > s.x && x < s.x + s.w && y > s.y && y < s.y + s.h) {
+                    if (s.state === 'ready') {
+                        let cookedId = ITEMS[s.item].cooksTo;
+                        let cItem = ITEMS[cookedId];
+                        
+                        if (cItem.type === 'side') {
+                            if (tray.sides.length < 3) { tray.sides.push(cookedId); s.state = 'empty'; s.item = null; playSound('pop'); }
+                        } else {
+                            if (canStack(cookedId)) { tray.stack.push(cookedId); s.state = 'empty'; s.item = null; playSound('pop'); }
+                            else triggerFX('error', x, y, "WRONG STACK!");
+                        }
+                    } else if (s.state === 'burnt') {
+                        s.state = 'empty'; s.item = null; triggerFX('error', x, y); // Trash sound
+                    }
+                }
+            });
+
+            // 3. Trash & Serve
+            if (x > 20 && x < 120 && y > 440 && y < 500) { tray = { stack: [], sides: [] }; triggerFX('error', x, y); } // Trash
+            if (x > 820 && x < 970 && y > 440 && y < 520) checkOrder(); // Serve
+        });
+
+        // --- UPDATE LOOP ---
+        let lastTime = Date.now();
+        function update() {
+            let now = Date.now(); let dt = (now - lastTime) / 1000; lastTime = now;
+            if (currentState !== GameState.PLAYING) return;
+
+            // Timer & Modes
+            if (gameData.active) {
+                gameData.time -= dt;
+                if (gameData.time <= 0) {
+                    currentState = GameState.GAMEOVER;
+                    document.getElementById('finalScoreDisplay').innerText = `Total Score: ${gameData.score}`;
+                    document.getElementById('uiGameOver').classList.remove('hidden');
+                }
+            }
+
+            // Customer Logic
+            spawnTimer += dt * 1000;
+            if (spawnTimer > MODES[currentMode].spawn) { spawnCustomer(); spawnTimer = 0; }
+
+            for (let i = customers.length - 1; i >= 0; i--) {
+                let c = customers[i];
+                if (c.state === 'waiting') {
+                    c.targetX = 50 + (i * 240); c.x += (c.targetX - c.x) * 0.1;
+                    c.pat -= MODES[currentMode].drain * (dt * 10);
+                    if (c.pat <= 0) {
+                        c.pat = 0; c.state = 'angry'; gameData.combo = 1; gameData.score -= 50;
+                        triggerFX('error', c.x + 50, c.y, "-50");
+                    }
+                } else {
+                    c.x += 15; if (c.x > 1100) customers.splice(i, 1);
+                }
+            }
+
+            // Station Logic
+            stations.forEach(s => {
+                if (s.state === 'cooking') {
+                    s.progress += dt * (100 / ITEMS[s.item].time);
+                    if (s.progress >= 100) { s.state = 'ready'; s.progress = 100; playSound('pop'); }
+                } else if (s.state === 'ready') {
+                    s.progress += dt * 10; // Overcook timer
+                    if (s.progress > 160) { s.state = 'burnt'; playSound('error'); }
+                }
+            });
+
+            // FX Logic
+            particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.5; p.life -= 0.02; });
+            particles = particles.filter(p => p.life > 0);
+            floatTexts.forEach(ft => { ft.y -= 1; ft.life -= 0.015; });
+            floatTexts = floatTexts.filter(ft => ft.life > 0);
+            if (screenShake > 0) screenShake--;
+            if (screenFlash > 0) screenFlash -= dt * 2;
+        }
+
+        // --- RENDER LOOP ---
+        function draw() {
+            ctx.save();
+            if (screenShake > 0) ctx.translate((Math.random()-0.5)*10, (Math.random()-0.5)*10);
+            
+            // BG
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 360, canvas.width, 320); // Counter BG
+            ctx.fillStyle = '#334155'; ctx.fillRect(0, 360, canvas.width, 15); // Table edge
+
+            if (currentState !== GameState.PLAYING) { ctx.restore(); return; }
+
+            // 1. HUD (Top)
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)'; ctx.fillRect(0, 0, canvas.width, 60);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 28px Nunito'; ctx.textAlign = 'left';
+            ctx.fillText(`SCORE: ${gameData.score}`, 20, 40);
+            ctx.fillStyle = gameData.combo > 1 ? '#f59e0b' : '#94a3b8';
+            ctx.fillText(`COMBO x${gameData.combo}`, 250, 40);
+            ctx.textAlign = 'right'; ctx.fillStyle = '#fff';
+            ctx.fillText(gameData.active ? `⏱️ ${Math.ceil(gameData.time)}s` : '🌿 RELAX MODE', 1000, 40);
+
+            // 2. Order Panel (Mid-Top)
+            ctx.fillStyle = '#cbd5e1'; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.roundRect(PNL_ORDER.x, PNL_ORDER.y, PNL_ORDER.w, PNL_ORDER.h, 15); ctx.fill();
+            ctx.shadowBlur = 0; ctx.fillStyle = '#334155'; ctx.textAlign = 'left'; ctx.font = 'bold 20px Nunito';
+            ctx.fillText("ACTIVE ORDERS:", PNL_ORDER.x + 20, PNL_ORDER.y + 30);
+            
+            customers.forEach((c, idx) => {
+                if (c.state !== 'waiting') return;
+                let ox = PNL_ORDER.x + 200 + (idx * 180);
+                
+                // Draw Order Stack
+                ctx.font = '24px Arial'; ctx.textAlign = 'center';
+                let st = [...c.order.stack].reverse();
+                st.forEach((itm, i) => ctx.fillText(ITEMS[itm].emo, ox, PNL_ORDER.y + 90 - (i*15)));
+                c.order.sides.forEach((itm, i) => ctx.fillText(ITEMS[itm].emo, ox + 40 + (i*25), PNL_ORDER.y + 90));
+                
+                // Patience Bar in Order Panel
+                ctx.fillStyle = '#94a3b8'; ctx.fillRect(ox - 30, PNL_ORDER.y + 100, 60, 6);
+                ctx.fillStyle = c.pat > 50 ? '#10b981' : (c.pat > 25 ? '#f59e0b' : '#ef4444');
+                ctx.fillRect(ox - 30, PNL_ORDER.y + 100, 60 * (c.pat/100), 6);
+            });
+
+            // 3. Customers (Middle)
+            customers.forEach(c => {
+                let bounce = Math.sin(Date.now() / 150) * 5;
+                let emoFace = c.pat < 30 ? '😠' : (c.pat < 60 ? '😐' : '🙂');
+                if (c.state === 'angry') emoFace = '😡';
+                ctx.font = '90px Arial'; ctx.textAlign = 'center';
+                ctx.fillText(emoFace, c.x + 50, c.y + 100 + bounce);
+            });
+
+            // 4. Counter / Tray (Plate & Sides)
+            ctx.fillStyle = '#e2e8f0'; ctx.shadowColor = 'rgba(0,0,0,0.4)'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.ellipse(250, 480, 100, 25, 0, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            ctx.font = '70px Arial'; ctx.textAlign = 'center';
+            tray.stack.forEach((itm, idx) => {
+                ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 5;
+                ctx.fillText(ITEMS[itm].emo, 250, 470 - (idx * 25));
+                ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+            });
+            ctx.font = '50px Arial';
+            tray.sides.forEach((itm, idx) => ctx.fillText(ITEMS[itm].emo, 130 + (idx*50), 490));
+
+            // 5. Trash & Serve Buttons
+            ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.roundRect(20, 440, 80, 60, 10); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Nunito'; ctx.fillText("🗑️ TRASH", 60, 475);
+            ctx.fillStyle = '#10b981'; ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 10;
+            ctx.beginPath(); ctx.roundRect(820, 440, 150, 80, 15); ctx.fill(); ctx.shadowBlur = 0;
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Nunito'; ctx.fillText("🛎️ SERVE", 895, 485);
+
+            // 6. Cooking Stations
+            stations.forEach(s => {
+                ctx.fillStyle = s.type === 'grill' ? '#334155' : '#fbbf24';
+                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.roundRect(s.x, s.y, s.w, s.h, 15); ctx.fill(); ctx.shadowBlur = 0;
+                
+                // Grid lines for grill
+                if(s.type === 'grill') {
+                    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+                    for(let i=1; i<4; i++) { ctx.beginPath(); ctx.moveTo(s.x + (i*22.5), s.y + 10); ctx.lineTo(s.x + (i*22.5), s.y + 80); ctx.stroke(); }
+                }
+
+                if (s.state !== 'empty') {
+                    let dispEmo = s.state === 'cooking' ? ITEMS[s.item].emo : ITEMS[ITEMS[s.item].cooksTo].emo;
+                    ctx.font = '50px Arial'; ctx.textAlign = 'center';
+                    
+                    if (s.state === 'ready') { ctx.shadowColor = '#10b981'; ctx.shadowBlur = 20; }
+                    else if (s.state === 'burnt') { ctx.filter = 'grayscale(100%) brightness(30%)'; dispEmo = '🔥'; }
+                    
+                    ctx.fillText(dispEmo, s.x + s.w/2, s.y + s.h/2 + 15);
+                    ctx.shadowBlur = 0; ctx.filter = 'none';
+
+                    // Progress Bar
+                    ctx.fillStyle = '#000'; ctx.fillRect(s.x + 10, s.y - 15, s.w - 20, 8);
+                    ctx.fillStyle = s.state === 'ready' ? '#10b981' : (s.state === 'burnt' ? '#ef4444' : '#f59e0b');
+                    ctx.fillRect(s.x + 10, s.y - 15, (s.w - 20) * (Math.min(s.progress, 100)/100), 8);
+                } else {
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.font = '16px Nunito';
+                    ctx.fillText(s.type.toUpperCase(), s.x + s.w/2, s.y + s.h/2 + 5);
+                }
+            });
+
+            // 7. Dispensers (Bottom)
+            dispensers.forEach(d => {
+                ctx.fillStyle = '#e2e8f0'; ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 5;
+                ctx.beginPath(); ctx.roundRect(d.x, d.y, 80, 80, 15); ctx.fill(); ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+                ctx.fillStyle = '#334155'; ctx.font = 'bold 12px Nunito'; ctx.textAlign = 'center';
+                ctx.fillText(d.id.replace('Raw', ''), d.x + 40, d.y + 70);
+                ctx.font = '40px Arial'; ctx.fillText(ITEMS[d.id].emo, d.x + 40, d.y + 45);
+            });
+
+            // FX
+            particles.forEach(p => { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2); ctx.fill(); });
+            ctx.globalAlpha = 1.0;
+            floatTexts.forEach(ft => { ctx.globalAlpha = Math.max(0, ft.life); ctx.fillStyle = ft.c; ctx.font = `bold ${ft.s}px Nunito`; ctx.shadowColor = '#000'; ctx.shadowBlur = 4; ctx.fillText(ft.text, ft.x, ft.y); ctx.shadowBlur = 0; });
+            ctx.globalAlpha = 1.0;
+            if (screenFlash > 0) { ctx.fillStyle = `rgba(255, 255, 255, ${screenFlash})`; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+
+            ctx.restore();
+        }
+
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        gameLoop();
+    </script>
+</body>
+</html>

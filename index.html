@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Game Center</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0f172a; /* Dark Navy Background */
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 0, 128, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(250, 204, 21, 0.15), transparent 25%);
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* HEADER ANIMATION */
+        header {
+            text-align: center;
+            margin-top: 5vh;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            /* Dual Tone Text: Pink & Yellow */
+            background: linear-gradient(45deg, #ff007f, #facc15);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 0px 10px rgba(255, 0, 128, 0.5));
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            color: #cbd5e1;
+            letter-spacing: 4px;
+            margin-top: -10px;
+            font-weight: 600;
+        }
+
+        /* GRID LAYOUT */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            width: 90%;
+            max-width: 1200px;
+            padding-bottom: 50px;
+        }
+
+        /* GAME CARDS */
+        .card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeInUp 0.8s ease-out both;
+        }
+
+        /* Staggered animation delays */
+        .card:nth-child(1) { animation-delay: 0.1s; border-image: linear-gradient(45deg, #ff007f, #facc15) 1; }
+        .card:nth-child(2) { animation-delay: 0.2s; border-image: linear-gradient(45deg, #facc15, #ff007f) 1; }
+        .card:nth-child(3) { animation-delay: 0.3s; border-image: linear-gradient(45deg, #ff007f, #facc15) 1; }
+        .card:nth-child(4) { animation-delay: 0.4s; border-image: linear-gradient(45deg, #facc15, #ff007f) 1; }
+        .card:nth-child(5) { animation-delay: 0.5s; border-image: linear-gradient(45deg, #ff007f, #facc15) 1; }
+
+        /* Kalo pake border-image, border-radius suka hilang, jadi kita pake teknik glow box-shadow */
+        .card {
+            border: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 5px;
+            background: linear-gradient(90deg, #ff007f, #facc15);
+            transition: height 0.3s ease;
+            z-index: 0;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 0, 128, 0.4), 0 0 20px rgba(250, 204, 21, 0.4);
+        }
+
+        .card:hover::before {
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        /* CARD CONTENT */
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            z-index: 1;
+            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.5));
+            transition: transform 0.3s bounce;
+        }
+
+        .card:hover .icon {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        .card h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            z-index: 1;
+            color: #facc15;
+            text-shadow: 0 0 5px rgba(250, 204, 21, 0.5);
+        }
+
+        .card p {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            z-index: 1;
+            flex-grow: 1;
+        }
+
+        .play-btn {
+            background: linear-gradient(45deg, #ff007f, #facc15);
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            padding: 10px 25px;
+            border-radius: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 1;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover .play-btn {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(250, 204, 21, 0.8);
+            color: #fff;
+        }
+
+        /* KEYFRAMES */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.5rem; }
+            .grid-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>WILDANBALDI GAME HUB</h1>
+        <p class="subtitle">SELECT YOUR EXPERIENCE</p>
+    </header>
+
+    <main class="grid-container">
+        
+        <a href="CyberCity3D.html" class="card">
+            <div class="icon">🏙️</div>
+            <h2>Cyber City 3D</h2>
+            <p>Build and manage your ultimate neon metropolis in full 3D.</p>
+            <div class="play-btn">PLAY NOW</div>
+        </a>
+
+        <a href="MinigamesMultiplayer.html" class="card">
+            <div class="icon">🎮</div>
+            <h2>Party Hub</h2>
+            <p>Challenge your friends in epic WebRTC online multiplayer minigames.</p>
+            <div class="play-btn">PLAY NOW</div>
+        </a>
+
+        <a href="FastFood.html" class="card">
+            <div class="icon">🍔</div>
+            <h2>Fast Food Rush</h2>
+            <p>Grill, assemble, and serve delicious combos to hungry customers.</p>
+            <div class="play-btn">PLAY NOW</div>
+        </a>
+
+        <a href="StreetFoodMaster.html" class="card">
+            <div class="icon">🍜</div>
+            <h2>Street Food Master</h2>
+            <p>Cook up local street delicacies and become the ultimate chef.</p>
+            <div class="play-btn">PLAY NOW</div>
+        </a>
+
+        <a href="PizzaGame.html" class="card">
+            <div class="icon">🍕</div>
+            <h2>Pizza Maker</h2>
+            <p>Knead the dough, add toppings, and bake the perfect pizza.</p>
+            <div class="play-btn">PLAY NOW</div>
+        </a>
+
+    </main>
+
+</body>
+</html>

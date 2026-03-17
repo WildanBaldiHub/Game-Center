@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Global Street Food - MEGA DLC + EVAL SCREEN</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+        * { box-sizing: border-box; user-select: none; -webkit-touch-callout: none; font-family: 'Nunito', sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; touch-action: none; }
+        #game-wrapper { position: relative; width: 100vw; height: 56.25vw; max-height: 100vh; max-width: 177.78vh; background: #0f172a; box-shadow: 0 0 50px rgba(0,0,0,1); overflow: hidden; transition: background 0.5s; }
+        canvas { display: block; width: 100%; height: 100%; }
+        
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(15,23,42,0.95) 0%, rgba(2,6,23,0.98) 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s, background 0.5s; }
+        .hidden { opacity: 0; pointer-events: none; }
+        h1 { color: #facc15; font-size: 4.5vw; margin: 0; text-shadow: 0 0.5vw 0 #ca8a04, 0 0 2vw rgba(250,204,21,0.5); text-align: center; font-weight: 900; letter-spacing: 2px; transition: color 0.5s;}
+        h2 { color: #38bdf8; font-size: 1.5vw; margin: 0 0 1.5vw 0; letter-spacing: 4px; text-align: center; text-transform: uppercase; transition: color 0.5s;}
+        h3 { color: #fff; font-size: 1.2vw; margin: 1vw 0 0.5vw 0; letter-spacing: 2px;}
+        
+        .mode-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1vw; max-width: 90%; }
+        .btn { background: #3b82f6; color: white; border: none; padding: 1vw 2vw; font-size: 1.2vw; font-weight: 800; border-radius: 0.8vw; cursor: pointer; box-shadow: 0 0.5vw 0 #1e3a8a; transition: all 0.1s; display: flex; flex-direction: column; align-items: center; }
+        .btn:active { transform: translateY(0.5vw); box-shadow: 0 0 0 transparent; }
+        .btn span { font-size: 0.8vw; font-weight: 700; margin-top: 0.3vw; opacity: 0.9;}
+        
+        .btn-green { background: #10b981; box-shadow: 0 0.5vw 0 #064e3b; }
+        .btn-red { background: #ef4444; box-shadow: 0 0.5vw 0 #7f1d1d; }
+        .btn-orange { background: #f59e0b; box-shadow: 0 0.5vw 0 #78350f; }
+        .btn-purple { background: #8b5cf6; box-shadow: 0 0.5vw 0 #4c1d95; }
+        
+        /* THEME BUTTONS */
+        .theme-btn { padding: 0.8vw 1.2vw; font-size: 1vw; flex-direction: row; gap: 8px;}
+        .theme-classic { background: #1e293b; box-shadow: 0 0.4vw 0 #0f172a;}
+        .theme-radio { background: #166534; box-shadow: 0 0.4vw 0 #052e16; color: #bbf7d0;}
+        .theme-cyber { background: #701a75; box-shadow: 0 0.4vw 0 #4a044e; color: #fbcfe8;}
+        .theme-hallo { background: #9a3412; box-shadow: 0 0.4vw 0 #7c2d12; color: #ffedd5;}
+        .theme-galaxy { background: #1e1b4b; box-shadow: 0 0.4vw 0 #0f172a; color: #c7d2fe;}
+        .theme-sakura { background: #be185d; box-shadow: 0 0.4vw 0 #831843; color: #fbcfe8;}
+        .theme-winter { background: #0369a1; box-shadow: 0 0.4vw 0 #075985; color: #e0f2fe;}
+        .theme-volcano { background: #b91c1c; box-shadow: 0 0.4vw 0 #7f1d1d; color: #fca5a5;}
+
+        #score-display { font-size: 8vw; color: #10b981; font-weight: 900; margin: 20px 0; text-shadow: 0 0 30px rgba(16,185,129,0.5);}
+
+        /* EVAL SCREEN STYLES (PERSIS KAYA GAMBAR 3) */
+        #order-eval-screen { background: rgba(15,23,42,0.98); z-index: 300; }
+        #eval-title-text { font-size: 5vw; margin: 0; font-weight: 900; letter-spacing: 2px; text-shadow: 0 0.5vw 0 rgba(0,0,0,0.5); }
+        #eval-percent { font-size: 7vw; color: #f59e0b; margin: 1vw 0; font-weight: 900; text-shadow: 0 0.5vw 0 #b45309; }
+        .eval-detail { color: #cbd5e1; font-size: 1.8vw; margin: 0.5vw 0; font-weight: 700; }
+        .eval-actions { display: flex; gap: 2vw; margin-top: 3vw; }
+        .btn-eval-next { background: #10b981; font-size: 1.8vw; padding: 1.5vw 3vw; border-radius: 1vw; }
+        .btn-eval-menu { background: #64748b; font-size: 1.8vw; padding: 1.5vw 3vw; border-radius: 1vw; box-shadow: 0 0.5vw 0 #334155; }
+    </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <div id="main-menu" class="overlay">
+        <h1 id="main-title">GLOBAL FOOD EMPIRE</h1>
+        <h2 id="sub-title">- 8 THEMES & 32 MENUS -</h2>
+        
+        <h3>GAME MODES</h3>
+        <div class="mode-grid">
+            <button class="btn btn-green" onclick="startGame('RELAX')">🌿 RELAX <span>No Timeout</span></button>
+            <button class="btn btn-orange" onclick="startGame('NORMAL')">🔥 NORMAL <span>Standard Shift</span></button>
+            <button class="btn btn-red" onclick="startGame('EXPERT')">💀 EXPERT <span>Fast Drain</span></button>
+            <button class="btn btn-purple" onclick="startGame('CHAOS')">🌪️ CHAOS <span>Random Fires!</span></button>
+        </div>
+
+        <h3 style="margin-top: 2vw; color: #cbd5e1;">SELECT DLC THEME:</h3>
+        <div class="mode-grid" style="max-width: 80%;">
+            <button class="btn theme-btn theme-classic" onclick="setTheme('CLASSIC')">🔵 CLASSIC</button>
+            <button class="btn theme-btn theme-radio" onclick="setTheme('RADIOACTIVE')">☢️ TOXIC</button>
+            <button class="btn theme-btn theme-cyber" onclick="setTheme('CYBERPUNK')">🌃 CYBER</button>
+            <button class="btn theme-btn theme-hallo" onclick="setTheme('HALLOWEEN')">🎃 SPOOKY</button>
+            <button class="btn theme-btn theme-galaxy" onclick="setTheme('GALAXY')">🌌 GALAXY</button>
+            <button class="btn theme-btn theme-sakura" onclick="setTheme('SAKURA')">🌸 SAKURA</button>
+            <button class="btn theme-btn theme-winter" onclick="setTheme('WINTER')">❄️ WINTER</button>
+            <button class="btn theme-btn theme-volcano" onclick="setTheme('VOLCANO')">🔥 LAVA</button>
+        </div>
+    </div>
+
+    <div id="order-eval-screen" class="overlay hidden">
+        <h1 id="eval-title-text" style="color: #facc15;">COULD BE BETTER</h1>
+        <div id="eval-percent">67%</div>
+        <div class="eval-detail" id="eval-food-detail">Main Dish: 0% (Wrong Recipe)</div>
+        <div class="eval-detail" id="eval-drink-detail">Drink: 100% (Perfect!)</div>
+        <div class="eval-detail" id="eval-side-detail">Side: 100% (Perfect!)</div>
+        
+        <div class="eval-actions">
+            <button class="btn btn-eval-next btn-green" onclick="closeEvalScreen()">NEXT ORDER</button>
+            <button class="btn btn-eval-menu" onclick="returnToMenu()">MENU</button>
+        </div>
+    </div>
+
+    <div id="eval-screen" class="overlay hidden">
+        <h1 id="eval-title" style="color:#ef4444; text-shadow: 0 0.5vw 0 #7f1d1d;">SHIFT OVER!</h1>
+        <div id="score-display">$0</div>
+        <button class="btn" style="padding: 1vw 4vw; font-size: 2vw;" onclick="returnToMenu()">MAIN MENU</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // --- DLC THEME ENGINE ---
+    const THEMES = {
+        CLASSIC: { bg1: '#0f172a', bg2: '#020617', panel: 'rgba(15, 23, 42, 0.95)', title: '#facc15', sub: '#38bdf8' },
+        RADIOACTIVE: { bg1: '#064e3b', bg2: '#022c22', panel: 'rgba(6, 78, 59, 0.95)', title: '#a3e635', sub: '#10b981' },
+        CYBERPUNK: { bg1: '#2e1065', bg2: '#09090b', panel: 'rgba(46, 16, 101, 0.95)', title: '#f0abfc', sub: '#2dd4bf' },
+        HALLOWEEN: { bg1: '#431407', bg2: '#000000', panel: 'rgba(67, 20, 7, 0.95)', title: '#f97316', sub: '#ea580c' },
+        GALAXY: { bg1: '#170b3b', bg2: '#020014', panel: 'rgba(23, 11, 59, 0.95)', title: '#c084fc', sub: '#818cf8' },
+        SAKURA: { bg1: '#831843', bg2: '#4c0519', panel: 'rgba(131, 24, 67, 0.95)', title: '#fbcfe8', sub: '#f472b6' },
+        WINTER: { bg1: '#075985', bg2: '#082f49', panel: 'rgba(7, 89, 133, 0.95)', title: '#e0f2fe', sub: '#7dd3fc' },
+        VOLCANO: { bg1: '#7f1d1d', bg2: '#450a0a', panel: 'rgba(127, 29, 29, 0.95)', title: '#fca5a5', sub: '#ef4444' }
+    };
+    let curTheme = 'CLASSIC';
+
+    function setTheme(t) {
+        curTheme = t; let thm = THEMES[curTheme];
+        document.getElementById('main-menu').style.background = `radial-gradient(circle, ${thm.bg1} 0%, ${thm.bg2} 100%)`;
+        document.getElementById('main-title').style.color = thm.title;
+        document.getElementById('sub-title').style.color = thm.sub;
+    }
+
+    const MODES = {
+        RELAX: { pDrain: 0, cookMult: 1, fireChance: 0 },
+        NORMAL: { pDrain: 1.2, cookMult: 1, fireChance: 0 },
+        EXPERT: { pDrain: 2.5, cookMult: 1.5, fireChance: 0 },
+        CHAOS: { pDrain: 2.0, cookMult: 1.2, fireChance: 0.004 }
+    };
+
+    // --- ITEM DATABASE ---
+    const ITEMS = {
+        'RAW_PATTY': { emo: '🥩', name: 'Raw Meat', type: 'grill', cookTime: 4, next: 'COOKED_PATTY' },
+        'COOKED_PATTY': { emo: '🍘', name: 'Patty', type: 'ingredient', burnTime: 5, next: 'BURNT_FOOD' },
+        'RAW_CHICKEN': { emo: '🍗', name: 'Chicken', type: 'grill', cookTime: 4, next: 'COOKED_CHICKEN' },
+        'COOKED_CHICKEN': { emo: '🍢', name: 'Satay', type: 'ingredient', burnTime: 5, next: 'BURNT_FOOD' }, 
+        'RAW_SAUSAGE': { emo: '🌭', name: 'Raw Ssg', type: 'grill', cookTime: 3.5, next: 'COOKED_SAUSAGE' },
+        'COOKED_SAUSAGE': { emo: '🥓', name: 'Cook Ssg', type: 'ingredient', burnTime: 4, next: 'BURNT_FOOD' },
+        'RAW_FISH': { emo: '🐟', name: 'Raw Fish', type: 'pan', stirs: 70, next: 'FRIED_FISH' },
+        'FRIED_FISH': { emo: '🍤', name: 'Fried Fish', type: 'ingredient' },
+        'RAW_SHRIMP': { emo: '🦐', name: 'Raw Shrimp', type: 'pan', stirs: 60, next: 'FRIED_SHRIMP' },
+        'FRIED_SHRIMP': { emo: '🍤', name: 'Cook Shrimp', type: 'ingredient' },
+        'RAW_BACON': { emo: '🥓', name: 'Raw Bacon', type: 'grill', cookTime: 3, next: 'CRISPY_BACON' },
+        'CRISPY_BACON': { emo: '🥓', name: 'Crispy Bcn', type: 'ingredient', burnTime: 3, next: 'BURNT_FOOD' },
+        'EGG': { emo: '🥚', name: 'Egg', type: 'pan', stirs: 40, next: 'FRIED_EGG' },
+        'FRIED_EGG': { emo: '🍳', name: 'Fried Egg', type: 'ingredient' },
+        'CHEESE': { emo: '🧀', name: 'Cheese', type: 'ingredient' },
+        'LETTUCE': { emo: '🥬', name: 'Lettuce', type: 'board', next: 'CHOPPED_LETTUCE' },
+        'CHOPPED_LETTUCE': { emo: '🥗', name: 'Salad', type: 'ingredient' },
+        'TOMATO': { emo: '🍅', name: 'Tomato', type: 'board', next: 'CHOPPED_TOMATO' },
+        'CHOPPED_TOMATO': { emo: '🥫', name: 'Chop Tom', type: 'ingredient' },
+        'MUSHROOM': { emo: '🍄', name: 'Mushroom', type: 'ingredient' },
+        'AVOCADO': { emo: '🥑', name: 'Avocado', type: 'ingredient' },
+        'BUN': { emo: '🥯', name: 'Bun', type: 'ingredient' },
+        'WRAP': { emo: '🫓', name: 'Wrap', type: 'ingredient' },
+        'RAW_NOODLE': { emo: '🍜', name: 'Raw Ndl', type: 'boil', cookTime: 4, next: 'BOILED_NOODLE' },
+        'BOILED_NOODLE': { emo: '🍝', name: 'Boil Ndl', type: 'pan', stirs: 80, next: 'FRIED_NOODLE' },
+        'FRIED_NOODLE': { emo: '🥡', name: 'Fried Ndl', type: 'ingredient' },
+        'RICE': { emo: '🍚', name: 'White Rice', type: 'pan', stirs: 80, next: 'FRIED_RICE' },
+        'FRIED_RICE': { emo: '🥘', name: 'Pan Rice', type: 'ingredient' }, 
+        'PASTA': { emo: '🍝', name: 'Raw Pasta', type: 'boil', cookTime: 5, next: 'BOILED_PASTA' },
+        'BOILED_PASTA': { emo: '🍝', name: 'Pasta', type: 'ingredient' },
+        'POTATO': { emo: '🥔', name: 'Potato', type: 'board', next: 'RAW_FRIES' },
+        'RAW_FRIES': { emo: '🍟', name: 'Raw Fries', type: 'pan', stirs: 80, next: 'FRIED_FRIES' },
+        'FRIED_FRIES': { emo: '🍟', name: 'Hot Fries', type: 'ingredient' },
+        'ONION': { emo: '🧅', name: 'Onion', type: 'board', next: 'RAW_ONION' },
+        'RAW_ONION': { emo: '🧅', name: 'Raw Rings', type: 'pan', stirs: 60, next: 'FRIED_ONION' },
+        'FRIED_ONION': { emo: '🍩', name: 'Onion Rings', type: 'ingredient' },
+        'SEAWEED': { emo: '🟩', name: 'Seaweed', type: 'ingredient' },
+        'TACO_SHELL': { emo: '🌮', name: 'Taco Shell', type: 'ingredient' },
+        'PINEAPPLE': { emo: '🍍', name: 'Pineapple', type: 'board', next: 'CHOP_PINE' },
+        'CHOP_PINE': { emo: '🍍', name: 'Chop Pine', type: 'ingredient' },
+        'CORN': { emo: '🌽', name: 'Raw Corn', type: 'grill', cookTime: 4, next: 'ROAST_CORN' },
+        'ROAST_CORN': { emo: '🌽', name: 'Roast Corn', type: 'ingredient' },
+        'CUP': { emo: '🥤', name: 'Cup', type: 'cup' },
+        'CUP_ICE': { emo: '🧊', name: 'Ice Cup', type: 'cup', overlay: '🥤' },
+        'BURNT_FOOD': { emo: '⬛', name: 'Burnt', type: 'trash' }
+    };
+
+    // --- BASE RECIPES (32 Menus!) ---
+    const BASE_RECIPES = [
+        // ASIA
+        { id: 'F_NASIGORENG', short: 'Nasi Gor', cont: 'ASIA', name: "Nasi Goreng", req: ['FRIED_RICE', 'FRIED_EGG'], emo: '🍛' },
+        { id: 'F_SEAFOODRICE', short: 'Sf. Rice', cont: 'ASIA', name: "Seafood Rice", req: ['FRIED_RICE', 'FRIED_SHRIMP', 'FRIED_EGG'], emo: '🍛🍤' },
+        { id: 'F_PINE_RICE', short: 'Pine Rice', cont: 'ASIA', name: "Pineapple Rice", req: ['FRIED_RICE', 'CHOP_PINE', 'FRIED_SHRIMP'], emo: '🍍🍛' }, 
+        { id: 'F_SATE', short: 'Sate', cont: 'ASIA', name: "Sate Ayam", req: ['COOKED_CHICKEN'], emo: '🍢' },
+        { id: 'F_MIE', short: 'Mie Gor', cont: 'ASIA', name: "Mie Goreng", req: ['FRIED_NOODLE'], emo: '🥡' },
+        { id: 'F_SUSHI', short: 'Sushi', cont: 'ASIA', name: "Sushi Salmon", req: ['FRIED_RICE', 'RAW_FISH', 'SEAWEED'], emo: '🍣' },
+        { id: 'F_RAMEN', short: 'Ramen', cont: 'ASIA', name: "Ramen Bowl", req: ['BOILED_NOODLE', 'COOKED_PATTY', 'FRIED_EGG'], emo: '🍜' }, // NEW
+        { id: 'F_TEMPURA', short: 'Tempura', cont: 'ASIA', name: "Shrimp Tempura", req: ['FRIED_SHRIMP'], emo: '🍤' }, // NEW
+        
+        // AMERICA
+        { id: 'F_BURGER', short: 'Burger', cont: 'AMERICA', name: "Cheeseburger", req: ['BUN', 'COOKED_PATTY', 'CHEESE', 'BUN'], emo: '🍔' },
+        { id: 'F_HAWAII', short: 'Aloha Bgr', cont: 'AMERICA', name: "Hawaiian Burger", req: ['BUN', 'COOKED_PATTY', 'CHEESE', 'CHOP_PINE', 'BUN'], emo: '🍔🍍' },
+        { id: 'F_AVO_TOAST', short: 'Avo Toast', cont: 'AMERICA', name: "Avocado Toast", req: ['BUN', 'AVOCADO', 'FRIED_EGG'], emo: '🥪🥑' }, 
+        { id: 'F_HOTDOG', short: 'Hotdog', cont: 'AMERICA', name: "Bacon Hotdog", req: ['BUN', 'COOKED_SAUSAGE', 'CRISPY_BACON'], emo: '🌭🥓' }, 
+        { id: 'F_TACO', short: 'Taco', cont: 'AMERICA', name: "Mexican Taco", req: ['TACO_SHELL', 'COOKED_PATTY', 'CHEESE', 'AVOCADO'], emo: '🌮' },
+        { id: 'F_FISH_TACO', short: 'Fish Taco', cont: 'AMERICA', name: "Fish Taco", req: ['TACO_SHELL', 'FRIED_FISH', 'CHOPPED_LETTUCE', 'CHOPPED_TOMATO'], emo: '🌮🐟' },
+        { id: 'F_FRIES', short: 'Fries', cont: 'AMERICA', name: "French Fries", req: ['FRIED_FRIES'], emo: '🍟' },
+        { id: 'F_LOADED_FRIES', short: 'Load Fries', cont: 'AMERICA', name: "Loaded Bacon Fries", req: ['FRIED_FRIES', 'CHEESE', 'CRISPY_BACON'], emo: '🍟🥓' }, // NEW
+        
+        // EUROPE
+        { id: 'F_SPAGHETTI', short: 'Pasta', cont: 'EUROPE', name: "Spaghetti", req: ['BOILED_PASTA', 'CHOPPED_TOMATO', 'COOKED_PATTY'], emo: '🍝🍅' },
+        { id: 'F_SF_PASTA', short: 'Sf. Pasta', cont: 'EUROPE', name: "Seafood Pasta", req: ['BOILED_PASTA', 'CHOPPED_TOMATO', 'FRIED_SHRIMP'], emo: '🍝🍤' },
+        { id: 'F_MUSH_PASTA', short: 'Mush Pasta', cont: 'EUROPE', name: "Mushroom Pasta", req: ['BOILED_PASTA', 'MUSHROOM', 'CHEESE'], emo: '🍝🍄' }, 
+        { id: 'F_FISHCHIPS', short: 'Fish&Chip', cont: 'EUROPE', name: "Fish & Chips", req: ['FRIED_FISH', 'FRIED_FRIES'], emo: '🍤🍟' },
+        { id: 'F_PIZZA', short: 'Pizza', cont: 'EUROPE', name: "Mushroom Pizza", req: ['WRAP', 'CHOPPED_TOMATO', 'CHEESE', 'MUSHROOM'], emo: '🍕' },
+        { id: 'F_ENG_BREAKFAST', short: 'Breakfast', cont: 'EUROPE', name: "English Breakfast", req: ['FRIED_EGG', 'CRISPY_BACON', 'CHOPPED_TOMATO'], emo: '🍳🥓' }, // NEW
+        
+        // AFRICA
+        { id: 'F_KEBAB', short: 'Kebab', cont: 'AFRICA', name: "Kebab Wrap", req: ['WRAP', 'COOKED_PATTY', 'CHOPPED_LETTUCE', 'CHOPPED_TOMATO'], emo: '🌯' },
+        { id: 'F_BACON_WRAP', short: 'Bacon Wrap', cont: 'AFRICA', name: "Bacon Egg Wrap", req: ['WRAP', 'CRISPY_BACON', 'FRIED_EGG', 'CHEESE'], emo: '🌯🥓' }, 
+        { id: 'F_SHAKSHUKA', short: 'Shakshuka', cont: 'AFRICA', name: "Shakshuka", req: ['FRIED_EGG', 'CHOPPED_TOMATO', 'FRIED_ONION'], emo: '🍳🍅' }, // NEW
+        
+        // AUSTRALIA
+        { id: 'F_SAUSAGE_SIZZLE', short: 'Aus Ssg', cont: 'AUSTRALIA', name: "Sausage Sizzle", req: ['BUN', 'COOKED_SAUSAGE', 'FRIED_ONION'], emo: '🌭🧅' },
+        { id: 'F_AUS_CORN', short: 'Chs Corn', cont: 'AUSTRALIA', name: "Cheese Corn", req: ['ROAST_CORN', 'CHEESE'], emo: '🌽🧀' },
+        { id: 'F_AUS_BURGER', short: 'Max Burger', cont: 'AUSTRALIA', name: "Aussie Max Burger", req: ['BUN', 'COOKED_PATTY', 'FRIED_EGG', 'CRISPY_BACON', 'BUN'], emo: '🍔🍳' }, 
+        { id: 'F_VEG_BURGER', short: 'Veg Burger', cont: 'AUSTRALIA', name: "Veggie Burger", req: ['BUN', 'AVOCADO', 'CHOPPED_TOMATO', 'CHOPPED_LETTUCE', 'BUN'], emo: '🍔🥑' }, // NEW
+        
+        // DRINKS (Global)
+        { id: 'F_COLA', short: 'Cola', cont: 'GLOBAL', name: "Ice Cola", req: ['MAGIC_COLA'], emo: '🧋' },
+        { id: 'F_JUICE', short: 'Juice', cont: 'GLOBAL', name: "Orange Juice", req: ['MAGIC_JUICE'], emo: '🧃' },
+        { id: 'F_COFFEE', short: 'Coffee', cont: 'GLOBAL', name: "Hot Coffee", req: ['MAGIC_COFFEE'], emo: '☕' },
+        { id: 'F_MATCHA', short: 'Matcha', cont: 'GLOBAL', name: "Matcha Tea", req: ['MAGIC_MATCHA'], emo: '🍵' }
+    ];
+
+    let activeRecipes = [];
+
+    // --- STATE ---
+    let state = { mode: null, isPlaying: false, evalPaused: false, score: 0, money: 0, combo: 1, orderTimer: 0, showRecipeBook: false, recipeTab: 'ASIA', lastTime: 0 };
+    let activeOrders = []; let entities = []; let particles = []; let floatingTexts = []; let screenFlash = 0;
+    let ptr = { x: 0, y: 0, isDown: false, startX: 0, startY: 0, timeDown: 0, draggedItem: null, swipeDetect: false };
+
+    // --- PERFECT UI LAYOUT (FIXED Z-INDEX & NO OVERLAP) ---
+    const STATIONS = {
+        ORDER_PANEL: { x: 0, y: 0, w: 1280, h: 140 },
+        GRILL: { x: 20, y: 150, w: 220, h: 210, name: '🔥 GRILL', fire: 0 },
+        POT: { x: 250, y: 150, w: 160, h: 210, name: '🍲 POT', fire: 0 },
+        PAN: { x: 420, y: 150, w: 220, h: 210, name: '🍳 PAN' },
+        BOARD: { x: 650, y: 150, w: 220, h: 210, name: '🪵 BOARD' },
+        WARMER: { x: 880, y: 150, w: 380, h: 210, name: '💡 WARMER' },
+        
+        DRINK: { x: 20, y: 380, w: 220, h: 320, name: '🥤 DRINKS' },
+        ASSEMBLY: { x: 250, y: 380, w: 390, h: 320, name: '🍽️ PLATE', items: [] },
+        FRIDGE: { x: 650, y: 380, w: 300, h: 320, name: '❄️ FRIDGE' },
+        SHELF: { x: 960, y: 380, w: 300, h: 320, name: '📦 SHELF' }
+    };
+
+    const UI_BUTTONS = {
+        BTN_ICE: { x: 30, y: 640, w: 60, h: 45, color: '#0ea5e9', text: '🧊' }, 
+        BTN_COLA: { x: 95, y: 640, w: 65, h: 45, color: '#991b1b', text: '🥤' },
+        BTN_JUICE: { x: 165, y: 640, w: 65, h: 45, color: '#f97316', text: '🍊' }, 
+        BTN_COFFEE: { x: 60, y: 585, w: 60, h: 45, color: '#78350f', text: '☕' },
+        BTN_MATCHA: { x: 130, y: 585, w: 60, h: 45, color: '#16a34a', text: '🍵' },
+        BTN_FINISH: { x: 490, y: 630, w: 130, h: 50, color: '#10b981', text: '🛎️ FINISH' }, 
+        BTN_TRASH_PLATE: { x: 490, y: 560, w: 130, h: 50, color: '#ef4444', text: '🗑️ CLEAR' },
+        
+        BTN_RECIPE: { x: 20, y: 85, w: 220, h: 45, color: '#facc15', text: '📖 RECIPES' },
+        TRASH_BIN: { x: 1180, y: 610, w: 70, h: 70 },
+        TAB_ASIA: { x: 200, y: 120, w: 180, h: 50, tab: 'ASIA', name: '🌏 ASIA' },
+        TAB_AMERICA: { x: 390, y: 120, w: 180, h: 50, tab: 'AMERICA', name: '🌎 AMERICA' },
+        TAB_EUROPE: { x: 580, y: 120, w: 180, h: 50, tab: 'EUROPE', name: '🌍 EUROPE' },
+        TAB_AFRICA: { x: 770, y: 120, w: 180, h: 50, tab: 'AFRICA', name: '🌍 AFRICA' },
+        TAB_AUS: { x: 960, y: 120, w: 180, h: 50, tab: 'AUSTRALIA', name: '🦘 AUSSIE' }
+    };
+
+    const SPAWNERS = [
+        { id: 'RAW_PATTY', x: 675, y: 440 }, { id: 'RAW_CHICKEN', x: 720, y: 440 }, { id: 'RAW_SAUSAGE', x: 765, y: 440 }, { id: 'RAW_FISH', x: 810, y: 440 }, { id: 'RAW_SHRIMP', x: 855, y: 440 }, { id: 'RAW_BACON', x: 900, y: 440 },
+        { id: 'EGG', x: 675, y: 550 }, { id: 'CHEESE', x: 720, y: 550 }, { id: 'LETTUCE', x: 765, y: 550 }, { id: 'TOMATO', x: 810, y: 550 }, { id: 'MUSHROOM', x: 855, y: 550 }, { id: 'AVOCADO', x: 900, y: 550 },
+        { id: 'BUN', x: 985, y: 440 }, { id: 'WRAP', x: 1030, y: 440 }, { id: 'RAW_NOODLE', x: 1075, y: 440 }, { id: 'RICE', x: 1120, y: 440 }, { id: 'PASTA', x: 1165, y: 440 }, { id: 'POTATO', x: 1210, y: 440 },
+        { id: 'ONION', x: 985, y: 550 }, { id: 'SEAWEED', x: 1030, y: 550 }, { id: 'TACO_SHELL', x: 1075, y: 550 }, { id: 'CORN', x: 1120, y: 550 }, { id: 'PINEAPPLE', x: 1165, y: 550 }, { id: 'CUP', x: 1210, y: 550 }
+    ];
+
+    // --- CORE FLOW ---
+    function applyThemeToRecipes() {
+        activeRecipes = JSON.parse(JSON.stringify(BASE_RECIPES));
+        activeRecipes.forEach(r => {
+            if (curTheme === 'RADIOACTIVE') { r.name = "Toxic " + r.name; r.short = "Tox " + r.short; r.emo += '☢️'; }
+            else if (curTheme === 'CYBERPUNK') { r.name = "Neon " + r.name; r.short = "Neo " + r.short; r.emo += '⚡'; }
+            else if (curTheme === 'HALLOWEEN') { r.name = "Creepy " + r.name; r.short = "Crp " + r.short; r.emo += '🦇'; }
+            else if (curTheme === 'GALAXY') { r.name = "Cosmic " + r.name; r.short = "Csm " + r.short; r.emo += '🌌'; }
+            else if (curTheme === 'SAKURA') { r.name = "Zen " + r.name; r.short = "Zen " + r.short; r.emo += '🌸'; }
+            else if (curTheme === 'WINTER') { r.name = "Frozen " + r.name; r.short = "Ice " + r.short; r.emo += '❄️'; }
+            else if (curTheme === 'VOLCANO') { r.name = "Lava " + r.name; r.short = "Lva " + r.short; r.emo += '🔥'; }
+            ITEMS[r.id] = { emo: r.emo, name: r.short, type: 'final' };
+        });
+    }
+
+    function startGame(modeKey) {
+        state.mode = MODES[modeKey];
+        state.isPlaying = true; state.evalPaused = false; state.score = 0; state.money = 0; state.combo = 1; state.orderTimer = 0; 
+        state.showRecipeBook = false; state.recipeTab = 'ASIA';
+        state.lastTime = performance.now();
+        entities = []; activeOrders = []; STATIONS.ASSEMBLY.items = []; particles = []; screenFlash = 0;
+        
+        applyThemeToRecipes(); 
+
+        document.getElementById('main-menu').classList.add('hidden');
+        document.getElementById('eval-screen').classList.add('hidden');
+        document.getElementById('order-eval-screen').classList.add('hidden');
+        
+        if (!state.mode.sandbox) { spawnOrder(); setTimeout(spawnOrder, 1500); }
+        requestAnimationFrame(gameLoop);
+    }
+
+    function returnToMenu() {
+        state.isPlaying = false; state.evalPaused = false;
+        document.getElementById('eval-screen').classList.add('hidden');
+        document.getElementById('order-eval-screen').classList.add('hidden');
+        document.getElementById('main-menu').classList.remove('hidden');
+    }
+
+    // --- EVALUATION POPUP LOGIC (GAMBAR 3) ---
+    function showOrderEval(patience, maxPatience, isWalkOut) {
+        let percent = isWalkOut ? 0 : Math.max(10, Math.floor((patience / maxPatience) * 100));
+        let title = "PERFECT!"; let tColor = "#10b981"; let pColor = "#10b981";
+        
+        if (isWalkOut) { title = "FAILED!"; tColor = "#ef4444"; pColor = "#ef4444"; }
+        else if (percent >= 80) { title = "PERFECT!"; tColor = "#facc15"; pColor = "#10b981"; }
+        else if (percent >= 50) { title = "COULD BE BETTER"; tColor = "#facc15"; pColor = "#f59e0b"; }
+        else { title = "BARELY MADE IT"; tColor = "#f59e0b"; pColor = "#ef4444"; }
+
+        document.getElementById('eval-title-text').innerText = title;
+        document.getElementById('eval-title-text').style.color = tColor;
+        document.getElementById('eval-percent').innerText = percent + "%";
+        document.getElementById('eval-percent').style.color = pColor;
+
+        let fd = isWalkOut ? "0% (Too Slow!)" : (percent >= 80 ? "100% (Perfect!)" : `${percent}% (Warm)`);
+        document.getElementById('eval-food-detail').innerText = `Food: ${fd}`;
+        document.getElementById('eval-drink-detail').innerText = `Drink: ${isWalkOut ? '0%' : '100%'} (Perfect!)`;
+        document.getElementById('eval-side-detail').innerText = `Side: ${isWalkOut ? '0%' : '100%'} (Perfect!)`;
+
+        document.getElementById('order-eval-screen').classList.remove('hidden');
+        state.evalPaused = true;
+    }
+
+    function closeEvalScreen() {
+        document.getElementById('order-eval-screen').classList.add('hidden');
+        state.evalPaused = false;
+        state.lastTime = performance.now(); 
+        if (!state.mode.sandbox && activeOrders.length < 4) setTimeout(spawnOrder, 1000);
+    }
+
+    function spawnOrder() {
+        if(activeOrders.length >= 4 || state.evalPaused) return;
+        let isOjek = Math.random() < 0.35; 
+        let numItems = isOjek ? Math.floor(Math.random() * 2) + 2 : Math.floor(Math.random() * 2) + 1; 
+        
+        let orderItems = [];
+        let foodRecipes = activeRecipes.filter(r => r.cont !== 'GLOBAL');
+        let drinkRecipes = activeRecipes.filter(r => r.cont === 'GLOBAL');
+
+        for(let i=0; i<numItems; i++) {
+            if(Math.random() < 0.3) {
+                let r = drinkRecipes[Math.floor(Math.random() * drinkRecipes.length)];
+                orderItems.push({ id: r.id, emo: r.emo, name: r.short, done: false });
+            } else {
+                let r = foodRecipes[Math.floor(Math.random() * foodRecipes.length)];
+                orderItems.push({ id: r.id, emo: r.emo, name: r.short, done: false });
+            }
+        }
+
+        activeOrders.push({
+            type: isOjek ? 'OJEK' : 'WALK_IN', icon: isOjek ? '🛵' : '🚶',
+            items: orderItems, patience: isOjek ? 130 : 100, maxPatience: isOjek ? 130 : 100
+        });
+        spawnJuice(200, 50, THEMES[curTheme].title, 10);
+    }
+
+    function spawnItem(id, x, y) {
+        let it = { id: id, x: x, y: y, size: 38, progress: 0, stirs: 0 };
+        entities.push(it); return it;
+    }
+
+    function spawnJuice(x, y, color, amt = 5) {
+        for(let i=0; i<amt; i++) particles.push({ x, y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, life: 1, color, size: Math.random()*5+3 });
+    }
+    function spawnText(text, x, y, color) { floatingTexts.push({ text, x, y, life: 1, color }); }
+
+    // --- WRAP TEXT ENGINE ---
+    function wrapText(context, text, x, y, maxWidth, lineHeight) {
+        let words = text.split(' '); let line = '';
+        for(let n = 0; n < words.length; n++) {
+            let testLine = line + words[n] + ' ';
+            let metrics = context.measureText(testLine);
+            if (metrics.width > maxWidth && n > 0) { context.fillText(line, x, y); line = words[n] + ' '; y += lineHeight; }
+            else { line = testLine; }
+        }
+        context.fillText(line, x, y); return y + lineHeight;
+    }
+
+    // --- INPUT CORE ---
+    function getEventPos(e) {
+        let ev = e.touches ? e.touches[0] : e; const rect = canvas.getBoundingClientRect();
+        return { x: (ev.clientX - rect.left) * (canvas.width / rect.width), y: (ev.clientY - rect.top) * (canvas.height / rect.height) };
+    }
+
+    canvas.addEventListener('mousedown', handleDown); canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); handleDown(e); }, {passive:false});
+    window.addEventListener('mousemove', handleMove); window.addEventListener('touchmove', (e)=>{ e.preventDefault(); handleMove(e); }, {passive:false});
+    window.addEventListener('mouseup', handleUp); window.addEventListener('touchend', handleUp);
+
+    function handleDown(e) {
+        if(!state.isPlaying || state.evalPaused) return;
+        let pos = getEventPos(e); ptr.x = pos.x; ptr.y = pos.y; ptr.startX = pos.x; ptr.startY = pos.y;
+        ptr.isDown = true; ptr.timeDown = performance.now(); ptr.swipeDetect = true;
+
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_RECIPE)) { state.showRecipeBook = !state.showRecipeBook; return; }
+        
+        if (state.showRecipeBook) {
+            let clickedTab = false;
+            [UI_BUTTONS.TAB_ASIA, UI_BUTTONS.TAB_AMERICA, UI_BUTTONS.TAB_EUROPE, UI_BUTTONS.TAB_AFRICA, UI_BUTTONS.TAB_AUS].forEach(tab => {
+                if(inRect(ptr.x, ptr.y, tab)) { state.recipeTab = tab.tab; clickedTab = true; }
+            });
+            if(!clickedTab) state.showRecipeBook = false; 
+            return; 
+        }
+
+        if (STATIONS.GRILL.fire > 0 && inRect(ptr.x, ptr.y, STATIONS.GRILL)) { STATIONS.GRILL.fire = 0; spawnJuice(ptr.x, ptr.y, '#38bdf8', 20); return; }
+        if (STATIONS.POT.fire > 0 && inRect(ptr.x, ptr.y, STATIONS.POT)) { STATIONS.POT.fire = 0; spawnJuice(ptr.x, ptr.y, '#38bdf8', 20); return; }
+
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_ICE)) {
+            let cup = entities.find(e => e.id === 'CUP' && inRect(e.x, e.y, STATIONS.DRINK));
+            if(cup) { cup.id = 'CUP_ICE'; spawnJuice(cup.x, cup.y, '#e0f2fe'); } return;
+        }
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_COLA)) {
+            let cup = entities.find(e => e.id === 'CUP_ICE' && inRect(e.x, e.y, STATIONS.DRINK));
+            if(cup) { cup.id = 'F_COLA'; spawnJuice(cup.x, cup.y, '#451a03', 10); spawnText("READY!", cup.x, cup.y, '#10b981');} return;
+        }
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_JUICE)) {
+            let cup = entities.find(e => e.id === 'CUP_ICE' && inRect(e.x, e.y, STATIONS.DRINK));
+            if(cup) { cup.id = 'F_JUICE'; spawnJuice(cup.x, cup.y, '#f97316', 10); spawnText("READY!", cup.x, cup.y, '#10b981');} return;
+        }
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_COFFEE)) {
+            let cup = entities.find(e => e.id === 'CUP' && inRect(e.x, e.y, STATIONS.DRINK));
+            if(cup) { cup.id = 'F_COFFEE'; spawnJuice(cup.x, cup.y, '#78350f', 10); spawnText("READY!", cup.x, cup.y, '#10b981');} return;
+        }
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_MATCHA)) {
+            let cup = entities.find(e => e.id === 'CUP_ICE' && inRect(e.x, e.y, STATIONS.DRINK));
+            if(cup) { cup.id = 'F_MATCHA'; spawnJuice(cup.x, cup.y, '#16a34a', 10); spawnText("READY!", cup.x, cup.y, '#10b981');} return;
+        }
+
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_FINISH)) { wrapAssemblyDish(); return; }
+        if (inRect(ptr.x, ptr.y, UI_BUTTONS.BTN_TRASH_PLATE)) {
+            if (STATIONS.ASSEMBLY.items.length > 0) {
+                STATIONS.ASSEMBLY.items = []; spawnText("CLEARED!", STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 150, '#ef4444');
+                spawnJuice(STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 150, '#64748b', 15);
+            } return;
+        }
+
+        let hitSpawner = false;
+        SPAWNERS.forEach(sp => {
+            if (Math.hypot(ptr.x - sp.x, ptr.y - sp.y) < 25) {
+                ptr.draggedItem = spawnItem(sp.id, ptr.x, ptr.y); ptr.swipeDetect = false; hitSpawner = true;
+            }
+        });
+        if(hitSpawner) return;
+
+        if (!ptr.draggedItem) {
+            for (let i = entities.length - 1; i >= 0; i--) {
+                let ent = entities[i];
+                if (Math.hypot(ptr.x - ent.x, ptr.y - ent.y) < ent.size) {
+                    ptr.draggedItem = ent; ptr.swipeDetect = false;
+                    entities.splice(i, 1); entities.push(ent); break;
+                }
+            }
+        }
+    }
+
+    function handleMove(e) {
+        if(!state.isPlaying || !ptr.isDown || state.showRecipeBook || state.evalPaused) return;
+        let pos = getEventPos(e); let dx = pos.x - ptr.x; let dy = pos.y - ptr.y;
+        ptr.x = pos.x; ptr.y = pos.y;
+
+        if (ptr.draggedItem) {
+            ptr.draggedItem.x = ptr.x; ptr.draggedItem.y = ptr.y;
+        } else {
+            if (inRect(ptr.x, ptr.y, STATIONS.PAN)) {
+                let dist = Math.hypot(dx, dy);
+                entities.forEach(ent => {
+                    if (inRect(ent.x, ent.y, STATIONS.PAN) && ITEMS[ent.id].type === 'pan') {
+                        ent.stirs += dist; if(Math.random()<0.2) spawnJuice(ent.x, ent.y, '#fef08a', 1);
+                        if (ent.stirs >= ITEMS[ent.id].stirs) {
+                            ent.id = ITEMS[ent.id].next; ent.stirs = 0;
+                            spawnText("FRIED!", ent.x, ent.y, '#10b981'); spawnJuice(ent.x, ent.y, '#b45309', 15);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    function handleUp(e) {
+        if(!state.isPlaying || !ptr.isDown || state.showRecipeBook || state.evalPaused) return;
+        ptr.isDown = false;
+        let tDiff = performance.now() - ptr.timeDown; let dist = Math.hypot(ptr.x - ptr.startX, ptr.y - ptr.startY);
+
+        if (ptr.swipeDetect && !ptr.draggedItem && tDiff < 300 && dist > 80) {
+            if (inRect(ptr.startX, ptr.startY, STATIONS.BOARD) || inRect(ptr.x, ptr.y, STATIONS.BOARD)) {
+                entities.forEach(ent => {
+                    if (inRect(ent.x, ent.y, STATIONS.BOARD) && ITEMS[ent.id].type === 'board') {
+                        ent.id = ITEMS[ent.id].next; spawnText("CHOP!", ent.x, ent.y, '#fff'); spawnJuice(ent.x, ent.y, '#22c55e', 10);
+                    }
+                });
+            }
+        }
+
+        if (ptr.draggedItem) {
+            let ent = ptr.draggedItem; let dropped = false;
+
+            if (ITEMS[ent.id].type === 'final' && ptr.y < 130) {
+                for (let i = 0; i < activeOrders.length; i++) {
+                    let order = activeOrders[i];
+                    let orderRect = { x: 280 + (i * 240), y: 15, w: 230, h: 110 };
+                    if (inRect(ptr.x, ptr.y, orderRect)) {
+                        let neededIdx = order.items.findIndex(item => item.id === ent.id && !item.done);
+                        if (neededIdx > -1) {
+                            order.items[neededIdx].done = true; entities = entities.filter(e => e !== ent);
+                            spawnJuice(ptr.x, ptr.y, '#10b981', 15); dropped = true;
+                            checkFullOrderComplete(i, orderRect.x); break;
+                        } else {
+                            // IF DROPPED WRONG ITEM!
+                            spawnText("WRONG ORDER!", ptr.x, ptr.y, '#ef4444');
+                            spawnJuice(ptr.x, ptr.y, '#ef4444', 15);
+                            entities = entities.filter(e => e !== ent); dropped = true;
+                            order.patience -= 20; // Penalty
+                            break;
+                        }
+                    }
+                }
+            }
+            if (dropped) { ptr.draggedItem = null; return; }
+
+            if (inRect(ent.x, ent.y, STATIONS.ASSEMBLY) && ITEMS[ent.id].type === 'ingredient') {
+                STATIONS.ASSEMBLY.items.push(ent.id); entities = entities.filter(e => e !== ent); spawnJuice(ent.x, ent.y, '#fff', 5); dropped = true;
+            }
+            if (!dropped && ITEMS[ent.id].type === 'final' && inRect(ent.x, ent.y, STATIONS.WARMER)) { spawnJuice(ent.x, ent.y, '#facc15', 5); }
+            if (!dropped && inRect(ent.x, ent.y, UI_BUTTONS.TRASH_BIN)) { entities = entities.filter(e => e !== ent); spawnJuice(ptr.x, ptr.y, '#64748b', 10); }
+            ptr.draggedItem = null;
+        }
+    }
+
+    function inRect(x, y, rect) { return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h; }
+
+    function wrapAssemblyDish() {
+        let currentItems = STATIONS.ASSEMBLY.items;
+        if (currentItems.length === 0) { spawnText("KOSONG!", STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 150, '#facc15'); return; }
+
+        let matchedFinalId = null;
+        for (let i = 0; i < activeRecipes.length; i++) {
+            if(activeRecipes[i].cont === 'GLOBAL') continue; 
+            
+            let req = [...activeRecipes[i].req]; let tempPlate = [...currentItems]; let isMatch = true;
+            req.forEach(r => {
+                let idx = tempPlate.indexOf(r);
+                if(idx > -1) tempPlate.splice(idx, 1); else isMatch = false; 
+            });
+
+            if (isMatch && tempPlate.length === 0) { matchedFinalId = activeRecipes[i].id; break; }
+        }
+
+        if (matchedFinalId) {
+            STATIONS.ASSEMBLY.items = []; 
+            spawnItem(matchedFinalId, STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 150); 
+            spawnJuice(STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 150, '#facc15', 20);
+            spawnText("READY!", STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 100, '#10b981');
+        } else { spawnText("WRONG RECIPE!", STATIONS.ASSEMBLY.x + 200, STATIONS.ASSEMBLY.y + 150, '#ef4444'); }
+    }
+
+    function checkFullOrderComplete(index, ox) {
+        let order = activeOrders[index];
+        if (order.items.every(item => item.done)) {
+            let pat = order.patience; let maxPat = order.maxPatience;
+            activeOrders.splice(index, 1);
+            
+            let scoreAdd = (order.type === 'OJEK' ? 200 : 100) * state.combo; 
+            if(pat < 30) scoreAdd = Math.floor(scoreAdd/2);
+            
+            state.money += scoreAdd; state.combo++;
+            spawnText(`+$${scoreAdd}`, ox + 115, 60, '#10b981'); 
+            screenFlash = 1.0;
+            
+            // TAMPILIN EVAL SCREEN!
+            showOrderEval(pat, maxPat, false);
+        }
+    }
+
+    function update(dt) {
+        if (state.showRecipeBook || state.evalPaused) return; // GAME PAUSED SAAT EVAL!
+
+        if (!state.mode.sandbox && activeOrders.length < 4) {
+            state.orderTimer += dt;
+            if (state.orderTimer > 8.0) { spawnOrder(); state.orderTimer = 0; }
+        }
+
+        if (state.mode.fireChance > 0) {
+            if (Math.random() < state.mode.fireChance && STATIONS.GRILL.fire === 0) STATIONS.GRILL.fire = 1;
+            if (Math.random() < state.mode.fireChance && STATIONS.POT.fire === 0) STATIONS.POT.fire = 1;
+        }
+
+        for(let i=activeOrders.length-1; i>=0; i--) {
+            activeOrders[i].patience -= dt * state.mode.pDrain;
+            if (activeOrders[i].patience <= 0) {
+                let ox = 280 + (i * 240); 
+                activeOrders.splice(i, 1); state.combo = 1;
+                spawnText("WALKED OUT!", ox + 115, 60, '#ef4444');
+                showOrderEval(0, 100, true); // EVAL FAILED!
+            }
+        }
+
+        entities.forEach(ent => {
+            if (ent === ptr.draggedItem) return; 
+            let itemData = ITEMS[ent.id];
+            
+            if (inRect(ent.x, ent.y, STATIONS.GRILL) && STATIONS.GRILL.fire === 0) {
+                if (itemData.type === 'grill') {
+                    ent.progress += dt * state.mode.cookMult; if(Math.random()<0.1) spawnJuice(ent.x, ent.y-20, '#cbd5e1', 1);
+                    if (ent.progress >= itemData.cookTime) { ent.id = itemData.next; ent.progress = 0; spawnText("COOKED!", ent.x, ent.y, '#f59e0b'); }
+                } else if (itemData.type === 'ingredient' && itemData.burnTime) {
+                    ent.progress += dt * state.mode.cookMult;
+                    if (ent.progress >= itemData.burnTime) { ent.id = itemData.next; ent.progress = 0; spawnText("BURNT!", ent.x, ent.y, '#ef4444'); }
+                }
+            }
+            if (inRect(ent.x, ent.y, STATIONS.POT) && STATIONS.POT.fire === 0) {
+                if (itemData.type === 'boil') {
+                    ent.progress += dt * state.mode.cookMult; if(Math.random()<0.2) spawnJuice(ent.x, ent.y, '#38bdf8', 1);
+                    if (ent.progress >= itemData.cookTime) { ent.id = itemData.next; ent.progress = 0; spawnText("BOILED!", ent.x, ent.y, '#38bdf8'); }
+                }
+            }
+        });
+
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.life -= dt; }); particles = particles.filter(p => p.life > 0);
+        floatingTexts.forEach(ft => { ft.y -= dt * 30; ft.life -= dt * 0.8; }); floatingTexts = floatingTexts.filter(ft => ft.life > 0);
+        if (screenFlash > 0) screenFlash = Math.max(0, screenFlash - dt * 2);
+    }
+
+    function drawGradientRect(x, y, w, h, r, colStart, colEnd, glow = false) {
+        let grad = ctx.createLinearGradient(x, y, x, y+h);
+        grad.addColorStop(0, colStart); grad.addColorStop(1, colEnd);
+        ctx.fillStyle = grad; ctx.globalAlpha = 1.0; 
+        if(glow) { ctx.shadowColor = colStart; ctx.shadowBlur = 15; } else { ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; }
+        ctx.shadowOffsetY = 5;
+        ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.fill();
+        ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    }
+
+    function draw() {
+        let t = THEMES[curTheme];
+        ctx.clearRect(0, 0, 1280, 720); ctx.globalAlpha = 1.0;
+
+        // --- STATIONS ---
+        drawGradientRect(STATIONS.GRILL.x, STATIONS.GRILL.y, STATIONS.GRILL.w, STATIONS.GRILL.h, 15, '#334155', '#1e293b');
+        drawGradientRect(STATIONS.POT.x, STATIONS.POT.y, STATIONS.POT.w, STATIONS.POT.h, 15, '#0f172a', '#020617');
+        drawGradientRect(STATIONS.PAN.x, STATIONS.PAN.y, STATIONS.PAN.w, STATIONS.PAN.h, 15, '#1e293b', '#0f172a');
+        drawGradientRect(STATIONS.BOARD.x, STATIONS.BOARD.y, STATIONS.BOARD.w, STATIONS.BOARD.h, 15, '#d97706', '#92400e');
+        drawGradientRect(STATIONS.WARMER.x, STATIONS.WARMER.y, STATIONS.WARMER.w, STATIONS.WARMER.h, 15, '#7f1d1d', '#450a0a', true); 
+        
+        drawGradientRect(STATIONS.DRINK.x, STATIONS.DRINK.y, STATIONS.DRINK.w, STATIONS.DRINK.h, 15, '#020617', '#000000');
+        drawGradientRect(STATIONS.ASSEMBLY.x, STATIONS.ASSEMBLY.y, STATIONS.ASSEMBLY.w, STATIONS.ASSEMBLY.h, 15, '#94a3b8', '#64748b');
+        
+        drawGradientRect(STATIONS.FRIDGE.x, STATIONS.FRIDGE.y, STATIONS.FRIDGE.w, STATIONS.FRIDGE.h, 15, '#bae6fd', '#38bdf8');
+        ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(STATIONS.FRIDGE.x+10, STATIONS.FRIDGE.y+10, STATIONS.FRIDGE.w-20, 100); 
+        drawGradientRect(STATIONS.SHELF.x, STATIONS.SHELF.y, STATIONS.SHELF.w, STATIONS.SHELF.h, 15, '#b45309', '#78350f');
+
+        ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = 'bold 20px Nunito'; ctx.textAlign = 'center';
+        Object.values(STATIONS).forEach(st => { 
+            if(st.name) ctx.fillText(st.name, st.x + st.w/2, st.y + 30); 
+            if(st.fire > 0) {
+                ctx.font = '60px Arial'; ctx.fillText('🔥', st.x + st.w/2, st.y + st.h/2 + Math.sin(performance.now()/100)*10);
+                ctx.fillStyle = '#ef4444'; ctx.font = 'bold 18px Nunito'; ctx.fillText('TAP TO PUT OUT!', st.x + st.w/2, st.y + 50);
+            }
+        });
+
+        ctx.fillStyle = '#f1f5f9'; ctx.beginPath(); ctx.ellipse(STATIONS.ASSEMBLY.x+195, STATIONS.ASSEMBLY.y+150, 140, 80, 0, 0, Math.PI*2); ctx.fill(); 
+        drawGradientRect(UI_BUTTONS.TRASH_BIN.x, UI_BUTTONS.TRASH_BIN.y, UI_BUTTONS.TRASH_BIN.w, UI_BUTTONS.TRASH_BIN.h, 10, '#ef4444', '#991b1b');
+        ctx.fillStyle='#fff'; ctx.font='35px Arial'; ctx.fillText('🗑️', UI_BUTTONS.TRASH_BIN.x+35, UI_BUTTONS.TRASH_BIN.y+45);
+
+        const drawBtn = (btn) => {
+            drawGradientRect(btn.x, btn.y, btn.w, btn.h, 10, btn.color, '#000');
+            ctx.fillStyle='#fff'; ctx.font='bold 20px Nunito'; ctx.fillText(btn.text, btn.x+btn.w/2, btn.y+30);
+        }
+        drawBtn(UI_BUTTONS.BTN_ICE); drawBtn(UI_BUTTONS.BTN_COLA); drawBtn(UI_BUTTONS.BTN_JUICE); 
+        drawBtn(UI_BUTTONS.BTN_COFFEE); drawBtn(UI_BUTTONS.BTN_MATCHA);
+        
+        ctx.fillStyle='#fff'; ctx.font='bold 16px Nunito'; 
+        drawGradientRect(UI_BUTTONS.BTN_FINISH.x, UI_BUTTONS.BTN_FINISH.y, UI_BUTTONS.BTN_FINISH.w, UI_BUTTONS.BTN_FINISH.h, 10, UI_BUTTONS.BTN_FINISH.color, '#000');
+        ctx.fillText(UI_BUTTONS.BTN_FINISH.text, UI_BUTTONS.BTN_FINISH.x+UI_BUTTONS.BTN_FINISH.w/2, UI_BUTTONS.BTN_FINISH.y+28);
+        drawGradientRect(UI_BUTTONS.BTN_TRASH_PLATE.x, UI_BUTTONS.BTN_TRASH_PLATE.y, UI_BUTTONS.BTN_TRASH_PLATE.w, UI_BUTTONS.BTN_TRASH_PLATE.h, 10, UI_BUTTONS.BTN_TRASH_PLATE.color, '#000');
+        ctx.fillText(UI_BUTTONS.BTN_TRASH_PLATE.text, UI_BUTTONS.BTN_TRASH_PLATE.x+UI_BUTTONS.BTN_TRASH_PLATE.w/2, UI_BUTTONS.BTN_TRASH_PLATE.y+28);
+
+        // --- TOP PANEL: Z-INDEX FIXED & NO OVERLAPS! ---
+        ctx.fillStyle = t.panel; ctx.fillRect(0, 0, 1280, 140);
+        
+        // AREA KIRI: STATS & BUKU RESEP
+        ctx.fillStyle = t.title; ctx.font = '900 36px Nunito'; ctx.textAlign = 'left';
+        ctx.fillText(`$$${state.money}`, 20, 45);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 24px Nunito';
+        ctx.fillText(`COMBO x${state.combo}`, 20, 75);
+        
+        drawGradientRect(UI_BUTTONS.BTN_RECIPE.x, UI_BUTTONS.BTN_RECIPE.y, UI_BUTTONS.BTN_RECIPE.w, UI_BUTTONS.BTN_RECIPE.h, 10, UI_BUTTONS.BTN_RECIPE.color, '#b45309', true);
+        ctx.fillStyle='#1e293b'; ctx.font='900 24px Nunito'; ctx.textAlign = 'center'; 
+        ctx.fillText(UI_BUTTONS.BTN_RECIPE.text, UI_BUTTONS.BTN_RECIPE.x+UI_BUTTONS.BTN_RECIPE.w/2, UI_BUTTONS.BTN_RECIPE.y+30);
+        
+        // AREA KANAN: KARTU PESANAN DIJAMIN AMAN DARI UI KIRI!
+        activeOrders.forEach((ord, i) => {
+            let ox = 280 + (i * 240); let oy = 15;
+            let gradColor = ord.type === 'OJEK' ? '#047857' : '#334155';
+            drawGradientRect(ox, oy, 230, 110, 10, gradColor, '#0f172a');
+            
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 16px Nunito'; ctx.textAlign = 'left';
+            ctx.fillText(`${ord.icon} ${ord.type}`, ox+10, oy+20);
+
+            ord.items.forEach((item, idx) => {
+                ctx.font = '32px Arial'; ctx.textAlign = 'center';
+                let itemX = ox + 40 + (idx * 55);
+                ctx.fillText(item.emo, itemX, oy + 60);
+                
+                ctx.font = 'bold 11px Nunito'; ctx.fillStyle = '#bae6fd';
+                ctx.fillText(item.name, itemX, oy + 78);
+
+                if (item.done) { 
+                    ctx.fillStyle = '#10b981'; ctx.font = '24px Arial'; 
+                    ctx.fillText('✔️', itemX + 15, oy + 50); 
+                }
+            });
+            
+            if (state.mode.pDrain > 0) {
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(ox+10, oy+95, 210, 8);
+                ctx.fillStyle = ord.patience > 50 ? '#10b981' : (ord.patience > 25 ? '#f59e0b' : '#ef4444');
+                ctx.fillRect(ox+10, oy+95, Math.max(0, (ord.patience/ord.maxPatience)*210), 8);
+            }
+        });
+
+        // --- RAW SPAWNERS ---
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        SPAWNERS.forEach(sp => {
+            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(sp.x, sp.y, 22, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 1.0; 
+            ctx.font = '26px Arial'; ctx.fillText(ITEMS[sp.id].emo, sp.x, sp.y-5);
+            ctx.font = 'bold 9px Nunito'; ctx.fillStyle = '#f8fafc';
+            ctx.fillText(ITEMS[sp.id].name, sp.x, sp.y+18);
+        });
+
+        // ASSEMBLY ITEMS
+        let py = STATIONS.ASSEMBLY.y + 200;
+        STATIONS.ASSEMBLY.items.forEach((id, i) => { 
+            ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 1.0; ctx.font = '55px Arial'; ctx.fillText(ITEMS[id].emo, STATIONS.ASSEMBLY.x + 195, py - (i*18)); 
+        });
+
+        // ENTITIES 
+        entities.forEach(ent => {
+            ctx.globalAlpha = 1.0; ctx.fillStyle = '#ffffff'; ctx.font = `${ent.size*1.2}px Arial`; ctx.textAlign='center';
+            ctx.save();
+            if(ent === ptr.draggedItem) { ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 20; ctx.scale(1.1, 1.1); }
+            
+            let drawX = ent === ptr.draggedItem ? ent.x/1.1 : ent.x;
+            let drawY = ent === ptr.draggedItem ? ent.y/1.1 : ent.y;
+
+            if(ent.id.startsWith('CUP')) {
+                ctx.fillText(ITEMS[ent.id].emo, drawX, drawY);
+                if(ITEMS[ent.id].overlay) ctx.fillText(ITEMS[ent.id].overlay, drawX, drawY);
+            } else { ctx.fillText(ITEMS[ent.id].emo, drawX, drawY); }
+
+            if (ITEMS[ent.id].type === 'final' && inRect(ent.x, ent.y, STATIONS.WARMER) && ent !== ptr.draggedItem) {
+                ctx.shadowColor = '#facc15'; ctx.shadowBlur = 15; ctx.fillText(ITEMS[ent.id].emo, ent.x, ent.y);
+                ctx.shadowBlur = 0; ctx.fillStyle = '#facc15'; ctx.font = 'bold 12px Nunito'; 
+                ctx.fillText(ITEMS[ent.id].name, ent.x, ent.y+25);
+            }
+            ctx.restore();
+
+            let itemData = ITEMS[ent.id];
+            if ((itemData.type === 'grill' || itemData.type === 'boil' || (itemData.type === 'ingredient' && itemData.burnTime)) && ent.progress > 0) {
+                let maxT = itemData.cookTime || itemData.burnTime; let c = itemData.burnTime ? '#ef4444' : '#f59e0b';
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(ent.x-20, ent.y+20, 40, 6); ctx.fillStyle = c; ctx.fillRect(ent.x-20, ent.y+20, Math.min(40, (ent.progress/maxT)*40), 6);
+            }
+            if (itemData.type === 'pan' && ent.stirs > 0) {
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(ent.x-20, ent.y+20, 40, 6); ctx.fillStyle = '#3b82f6'; ctx.fillRect(ent.x-20, ent.y+20, Math.min(40, (ent.stirs/itemData.stirs)*40), 6);
+            }
+        });
+
+        particles.forEach(p => { ctx.globalAlpha = Math.max(0, p.life); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); }); ctx.globalAlpha = 1.0;
+        floatingTexts.forEach(ft => { ctx.globalAlpha = Math.max(0, ft.life); ctx.fillStyle = ft.color; ctx.font = '900 35px Nunito'; ctx.shadowColor = '#000'; ctx.shadowBlur = 10; ctx.fillText(ft.text, ft.x, ft.y); ctx.shadowBlur=0; }); ctx.globalAlpha = 1.0;
+
+        if (ptr.isDown && ptr.swipeDetect && !ptr.draggedItem && inRect(ptr.startX, ptr.startY, STATIONS.BOARD)) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(ptr.startX, ptr.startY); ctx.lineTo(ptr.x, ptr.y); ctx.stroke();
+        }
+
+        if (screenFlash > 0) { ctx.fillStyle = `rgba(255,255,255,${screenFlash})`; ctx.fillRect(0,0,1280,720); }
+
+        // --- BUKU RESEP HD DENGAN AUTO THEME NAME & ANTI NABRAK DRINK ---
+        if (state.showRecipeBook) {
+            ctx.fillStyle = t.panel; ctx.fillRect(0, 0, 1280, 720);
+            
+            const tabs = [UI_BUTTONS.TAB_ASIA, UI_BUTTONS.TAB_AMERICA, UI_BUTTONS.TAB_EUROPE, UI_BUTTONS.TAB_AFRICA, UI_BUTTONS.TAB_AUS];
+            tabs.forEach(tabBtn => {
+                let isActive = state.recipeTab === tabBtn.tab;
+                drawGradientRect(tabBtn.x, tabBtn.y, tabBtn.w, tabBtn.h + (isActive?20:0), 15, isActive?'#f8fafc':'#64748b', isActive?'#e2e8f0':'#475569');
+                ctx.fillStyle = isActive ? '#0f172a' : '#fff'; ctx.font = 'bold 20px Nunito'; ctx.textAlign = 'center';
+                ctx.fillText(tabBtn.name, tabBtn.x + tabBtn.w/2, tabBtn.y + 35);
+            });
+
+            drawGradientRect(180, 160, 920, 500, 20, '#f8fafc', '#e2e8f0');
+            
+            ctx.fillStyle = '#b45309'; ctx.font = '900 40px Nunito'; ctx.textAlign = 'center'; 
+            ctx.fillText(`📖 ${state.recipeTab} & GLOBAL RECIPES`, 640, 230);
+            
+            ctx.fillStyle = '#1e293b'; ctx.font = 'bold 22px Nunito'; ctx.textAlign = 'left';
+            let ry = 280; let rx = 220;
+
+            let tabRecipes = activeRecipes.filter(r => r.cont === state.recipeTab);
+            tabRecipes.forEach(r => {
+                let rText = "";
+                if(r.id === 'F_NASIGORENG') rText = `${r.emo} ${r.name}: White Rice🍚(Wajan🍳) + Egg🥚(Wajan🍳)`;
+                else if(r.id === 'F_SEAFOODRICE') rText = `${r.emo} ${r.name}: White Rice🍚(Wajan) + Raw Shrimp🦐(Wajan) + Egg🥚(Wajan)`;
+                else if(r.id === 'F_PINE_RICE') rText = `${r.emo} ${r.name}: White Rice🍚(Wajan) + Pine🍍(Papan) + Raw Shrimp🦐(Wajan)`;
+                else if(r.id === 'F_SATE') rText = `${r.emo} ${r.name}: Chicken🍗(Grill🔥)`;
+                else if(r.id === 'F_MIE') rText = `${r.emo} ${r.name}: Raw Ndl🍜(Panci🍲) -> Aduk Wajan🍳`;
+                else if(r.id === 'F_SUSHI') rText = `${r.emo} ${r.name}: White Rice🍚(Wajan) + Raw Fish🐟(Mentah) + Seaweed🟩`;
+                else if(r.id === 'F_RAMEN') rText = `${r.emo} ${r.name}: Boil Ndl🍜(Panci) + Meat🥩(Grill) + Egg🥚(Wajan)`;
+                else if(r.id === 'F_TEMPURA') rText = `${r.emo} ${r.name}: Shrimp🦐(Wajan)`;
+                
+                else if(r.id === 'F_BURGER') rText = `${r.emo} ${r.name}: Bun🥯 + Raw Meat🥩(Grill🔥) + Cheese🧀 + Bun🥯`;
+                else if(r.id === 'F_HAWAII') rText = `${r.emo} ${r.name}: Bun🥯 + Meat🥩(Grill) + Cheese🧀 + Pine🍍(Papan) + Bun🥯`;
+                else if(r.id === 'F_AVO_TOAST') rText = `${r.emo} ${r.name}: Bun🥯 + Avocado🥑(Mentah) + Egg🥚(Wajan🍳)`;
+                else if(r.id === 'F_HOTDOG') rText = `${r.emo} ${r.name}: Bun🥯 + Raw Ssg🌭(Grill🔥) + Raw Bacon🥓(Grill🔥)`;
+                else if(r.id === 'F_TACO') rText = `${r.emo} ${r.name}: Taco Shell🌮 + Meat🥩(Grill) + Cheese🧀 + Avocado🥑`;
+                else if(r.id === 'F_FISH_TACO') rText = `${r.emo} ${r.name}: Taco Shell🌮 + Fish🐟(Wajan) + Lettuce🥬(Papan) + Tom🍅(Papan)`;
+                else if(r.id === 'F_FRIES') rText = `${r.emo} ${r.name}: Potato🥔(Papan🪵) -> Wajan🍳`;
+                else if(r.id === 'F_LOADED_FRIES') rText = `${r.emo} ${r.name}: Fries🍟(Wajan) + Cheese🧀 + Bacon🥓(Grill)`;
+
+                else if(r.id === 'F_SPAGHETTI') rText = `${r.emo} ${r.name}: Pasta🍝(Panci) + Tomato🍅(Papan) + Meat🥩(Grill)`;
+                else if(r.id === 'F_SF_PASTA') rText = `${r.emo} ${r.name}: Pasta🍝(Panci) + Tomato🍅(Papan) + Shrimp🦐(Wajan)`;
+                else if(r.id === 'F_MUSH_PASTA') rText = `${r.emo} ${r.name}: Pasta🍝(Panci) + Mushroom🍄(Mentah) + Cheese🧀`;
+                else if(r.id === 'F_FISHCHIPS') rText = `${r.emo} ${r.name}: Raw Fish🐟(Wajan🍳) + Hot Fries🍟`;
+                else if(r.id === 'F_PIZZA') rText = `${r.emo} ${r.name}: Wrap🫓 + Tomato🍅(Papan) + Cheese🧀 + Mushroom🍄`;
+                else if(r.id === 'F_ENG_BREAKFAST') rText = `${r.emo} ${r.name}: Egg🥚(Wajan) + Bacon🥓(Grill) + Tomato🍅(Papan)`;
+
+                else if(r.id === 'F_KEBAB') rText = `${r.emo} ${r.name}: Wrap🫓 + Meat🥩(Grill) + Lettuce🥬(Papan) + Tomato🍅(Papan)`;
+                else if(r.id === 'F_BACON_WRAP') rText = `${r.emo} ${r.name}: Wrap🫓 + Bacon🥓(Grill) + Egg🥚(Wajan) + Cheese🧀`;
+                else if(r.id === 'F_SHAKSHUKA') rText = `${r.emo} ${r.name}: Egg🥚(Wajan) + Tomato🍅(Papan) + Onion🧅(Wajan)`;
+
+                else if(r.id === 'F_SAUSAGE_SIZZLE') rText = `${r.emo} ${r.name}: Bun🥯 + Ssg🌭(Grill) + Onion🧅(Papan->Wajan)`;
+                else if(r.id === 'F_AUS_CORN') rText = `${r.emo} ${r.name}: Raw Corn🌽(Grill🔥) + Cheese🧀`;
+                else if(r.id === 'F_AUS_BURGER') rText = `${r.emo} ${r.name}: Bun🥯 + Meat🥩(Grill) + Egg🥚(Wajan) + Bacon🥓(Grill) + Bun🥯`;
+                else if(r.id === 'F_VEG_BURGER') rText = `${r.emo} ${r.name}: Bun🥯 + Avo🥑(Mentah) + Tomato🍅(Papan) + Lettuce🥬(Papan) + Bun🥯`;
+
+                if(rText !== "") ry = wrapText(ctx, rText, rx, ry, 840, 28) + 8;
+            });
+
+            // FIX OVERLAP: Drink position dynamically set strictly BELOW the last recipe!
+            let drinkY = Math.max(ry + 15, 600);
+            ctx.fillStyle = '#0ea5e9';
+            wrapText(ctx, `🥤 DRINKS: Cola🧋 | Juice🧃 | Coffee☕ | Matcha🍵 (Cup + Button!)`, rx, drinkY, 840, 35);
+
+            ctx.fillStyle = '#ef4444'; ctx.textAlign = 'center'; ctx.font = 'bold 24px Nunito';
+            ctx.fillText('TAP OUTSIDE THE MENU TO CLOSE', 640, 640);
+        }
+    }
+
+    function gameLoop(time) {
+        if (!state.isPlaying) return; requestAnimationFrame(gameLoop);
+        let dt = (time - state.lastTime) / 1000; state.lastTime = time;
+        if (dt > 0.1) dt = 0.1; update(dt); draw();
+    }
+</script>
+</body>
+</html>

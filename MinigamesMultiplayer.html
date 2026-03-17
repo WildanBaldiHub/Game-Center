@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wildan Party Hub - 12 GAMES MULTIPLAYER</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        * { box-sizing: border-box; user-select: none; font-family: 'Orbitron', sans-serif; outline: none; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; touch-action: none; }
+        
+        #game-container { position: relative; width: 100vw; height: 56.25vw; max-height: 100vh; max-width: 177.78vh; background: #020617; overflow: hidden; border: 2px solid #1e293b;}
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(15,23,42,0.95) 0%, rgba(2,6,23,0.98) 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; }
+        .hidden { display: none !important; }
+
+        h1 { color: #00f2ff; font-size: 4vw; margin: 0; text-shadow: 0 0 20px #00f2ff; }
+        h2 { color: #facc15; font-size: 2vw; margin-bottom: 2vw; }
+        
+        .btn { background: #1e293b; color: #00f2ff; border: 2px solid #00f2ff; padding: 1vw 2vw; font-size: 1.5vw; font-weight: 900; border-radius: 0.5vw; cursor: pointer; margin: 0.5vw; box-shadow: 0 0.5vw 0 #0284c7; transition: 0.1s;}
+        .btn:active { transform: translateY(0.5vw); box-shadow: 0 0 0 transparent; }
+        .btn-green { color: #a3e635; border-color: #a3e635; box-shadow: 0 0.5vw 0 #4d7c0f; }
+        .btn-red { color: #ff0055; border-color: #ff0055; box-shadow: 0 0.5vw 0 #9f1239; }
+        .btn-purple { color: #c084fc; border-color: #c084fc; box-shadow: 0 0.5vw 0 #7e22ce; }
+
+        input, select { background: #0f172a; border: 2px solid #38bdf8; color: #fff; padding: 1vw; font-size: 1.5vw; text-align: center; border-radius: 0.5vw; margin: 1vw; width: 30vw; font-family: 'Orbitron'; }
+
+        #lobby-ui { display: flex; width: 95%; height: 85%; gap: 1vw; }
+        .lobby-panel { background: rgba(15,23,42,0.8); border: 2px solid #38bdf8; border-radius: 1vw; padding: 1.5vw; flex: 1; display: flex; flex-direction: column; align-items: center; }
+        .player-slot { width: 100%; background: #1e293b; padding: 1vw; margin: 0.5vw 0; border-radius: 0.5vw; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #fff; font-size: 1.2vw; color: #fff; font-weight: bold;}
+        
+        .game-grid { display: flex; flex-wrap: wrap; gap: 1vw; justify-content: center; overflow-y: auto; max-height: 50vh; padding: 1vw;}
+        .game-card { width: 11vw; background: #0f172a; border: 2px solid #64748b; border-radius: 0.5vw; cursor: pointer; display: flex; flex-direction: column; align-items: center; padding: 1vw; transition: 0.2s; position: relative;}
+        .game-card.selected { border-color: #facc15; background: #451a03; box-shadow: 0 0 15px #facc15; }
+        .game-card .badge { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 14px; opacity: 0; }
+        .game-card.selected .badge { opacity: 1; }
+        .game-card span { font-size: 2.5vw; margin-bottom: 0.5vw; }
+        .game-card p { margin: 0; font-size: 0.8vw; color: #e2e8f0; font-weight: bold; text-align: center;}
+
+        #in-game-hud { position: absolute; top: 1vw; width: 100%; display: flex; justify-content: space-around; pointer-events: none; z-index: 50; flex-wrap: wrap;}
+        .score-box { background: rgba(0,0,0,0.8); padding: 0.5vw 1vw; border-radius: 1vw; font-size: 1.5vw; font-weight: bold; border: 2px solid; color: #fff; margin: 5px; display: flex; flex-direction: column; align-items: center;}
+        .score-box span.series { font-size: 1vw; color: #facc15; }
+        
+        #round-announcer { position: absolute; top: 40%; width: 100%; text-align: center; color: #facc15; font-size: 5vw; font-weight: 900; text-shadow: 0 0 30px #000; z-index: 60; pointer-events: none; transition: 0.5s; opacity: 0;}
+
+        #toast { position: absolute; bottom: 8vw; background: #1e293b; color: #fff; padding: 1vw 2vw; font-size: 1.5vw; border-radius: 1vw; border: 2px solid #00f2ff; transition: 0.3s; opacity: 0; pointer-events: none; z-index: 200;}
+        
+        #mobile-controls { position: absolute; bottom: 0; left: 0; width: 100%; height: 40%; pointer-events: none; z-index: 150; display: flex; justify-content: space-between; padding: 2vw 5vw; align-items: flex-end; }
+        .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; pointer-events: auto; }
+        .dpad-btn { width: 60px; height: 60px; background: rgba(0,242,255,0.2); border: 2px solid #00f2ff; border-radius: 10px; color: #00f2ff; font-size: 24px; font-weight: bold; display: flex; justify-content: center; align-items: center; }
+        .act-btn { width: 80px; height: 80px; background: rgba(255,0,85,0.2); border: 2px solid #ff0055; border-radius: 50%; color: #ff0055; font-size: 24px; font-weight: bold; display: flex; justify-content: center; align-items: center; pointer-events: auto; margin-bottom: 10px; }
+
+        /* LOADING SCREEN ANIMATION */
+        .spinner { width: 10vw; height: 10vw; border: 1vw solid rgba(0, 242, 255, 0.3); border-top: 1vw solid #00f2ff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2vw; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <div id="in-game-hud" class="hidden"></div>
+    <div id="round-announcer">ROUND 1: SUMO GLOW</div>
+
+    <div id="mobile-controls" class="hidden">
+        <div class="dpad">
+            <div></div><div class="dpad-btn" id="btn-up">W</div><div></div>
+            <div class="dpad-btn" id="btn-left">A</div><div class="dpad-btn" id="btn-down">S</div><div class="dpad-btn" id="btn-right">D</div>
+        </div>
+        <div class="act-btn" id="btn-action">ACT</div>
+    </div>
+
+    <div id="menu-setup" class="overlay">
+        <h1>WILDAN PARTY HUB</h1>
+        <h2>INITIALIZE PLAYER</h2>
+        <input type="text" id="player-nickname" placeholder="ENTER NICKNAME..." maxlength="10">
+        <h3 style="color: #94a3b8; margin-top: 2vw;">SELECT DEVICE</h3>
+        <div style="display: flex; gap: 2vw;">
+            <button class="btn" onclick="finishSetup('PC')">💻 PC / LAPTOP<br><span style="font-size: 1vw;">(WASD + ACTION)</span></button>
+            <button class="btn btn-green" onclick="finishSetup('MOBILE')">📱 HP / TABLET<br><span style="font-size: 1vw;">(VIRTUAL JOYSTICK)</span></button>
+        </div>
+    </div>
+
+    <div id="menu-main" class="overlay hidden">
+        <h1 id="welcome-text">WELCOME</h1>
+        <h2>CHOOSE MODE</h2>
+        <div style="display: flex; gap: 2vw;">
+            <button class="btn btn-green" onclick="showScreen('menu-offline')">🤖 PLAY vs BOT</button>
+            <button class="btn" onclick="showScreen('menu-online')">🌐 ONLINE (P2P)</button>
+        </div>
+    </div>
+
+    <div id="menu-offline" class="overlay hidden">
+        <h1>PLAY OFFLINE</h1>
+        <div style="display: flex; gap: 1vw; align-items: center; margin-bottom: 2vw;">
+            <span style="color: #fff; font-size: 1.5vw;">Total Players:</span>
+            <select id="bot-count"><option value="2">2 Players</option><option value="3">3 Players</option><option value="4">4 Players</option></select>
+        </div>
+        <div style="display: flex; gap: 2vw;">
+            <button class="btn btn-red" onclick="showScreen('menu-main')">BACK</button>
+            <button class="btn btn-green" onclick="initLobby(true, false)">START LOBBY</button>
+        </div>
+    </div>
+
+    <div id="menu-online" class="overlay hidden">
+        <h1>ONLINE MULTIPLAYER</h1>
+        <div style="display: flex; gap: 2vw; width: 80%; margin-top: 2vw;">
+            <div class="lobby-panel">
+                <h3 style="color: #facc15;">PRIVATE ROOM</h3>
+                <input type="text" id="room-code-input" placeholder="ENTER 4-LETTER CODE..." maxlength="4">
+                <button class="btn" onclick="joinRoom()">JOIN VIA CODE</button>
+                <button class="btn btn-green" style="margin-top: 1vw;" onclick="initLobby(false, true)">HOST NEW ROOM</button>
+            </div>
+            <div class="lobby-panel">
+                <h3 style="color: #a3e635;">PUBLIC SERVERS</h3>
+                <div style="width: 100%; height: 15vw; background: #0f172a; border-radius: 0.5vw; padding: 1vw; color: #94a3b8; font-size: 1vw; text-align: center; display: flex; align-items: center; justify-content: center;">
+                    [Vercel Serverless Mode]<br>Use Room Codes for reliable P2P connection!
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-red" style="margin-top: 2vw;" onclick="showScreen('menu-main')">BACK TO MAIN</button>
+    </div>
+
+    <div id="menu-lobby" class="overlay hidden">
+        <h1 id="lobby-title" style="margin: 0;">ROOM: ABCD</h1>
+        <h3 id="room-visibility" style="color: #ef4444; margin: 0 0 1vw 0; font-size: 1vw;">[PRIVATE]</h3>
+        
+        <div id="lobby-ui">
+            <div class="lobby-panel" style="flex: 1;">
+                <h3 style="color: #38bdf8; margin-top: 0;">PLAYERS <span id="player-count">1/4</span></h3>
+                <div id="player-list" style="width: 100%;"></div>
+                
+                <div id="host-controls" style="margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 0.5vw;">
+                    <button class="btn" style="font-size: 1vw; padding: 0.5vw;" onclick="addBot()">+ ADD BOT</button>
+                    <button class="btn btn-purple" style="font-size: 1vw; padding: 0.5vw;" id="btn-toggle-public" onclick="togglePublic()">MAKE PUBLIC 🌐</button>
+                </div>
+                <button class="btn btn-red" style="margin-top: 1vw; font-size: 1vw; width: 100%;" onclick="leaveRoom()">LEAVE ROOM</button>
+            </div>
+
+            <div class="lobby-panel" style="flex: 2.5;">
+                <h3 style="color: #facc15; margin-top: 0;">SELECT PLAYLIST (12 GAMES)</h3>
+                <div class="game-grid" id="game-grid">
+                    <div class="game-card" id="card-SUMO" onclick="toggleGame('SUMO')"><div class="badge">0</div><span>🤜</span><p>SUMO GLOW</p></div>
+                    <div class="game-card" id="card-TANKS" onclick="toggleGame('TANKS')"><div class="badge">0</div><span>🚀</span><p>NEON TANKS</p></div>
+                    <div class="game-card" id="card-SPEED" onclick="toggleGame('SPEED')"><div class="badge">0</div><span>⚡</span><p>SPEED TAP</p></div>
+                    <div class="game-card" id="card-DODGE" onclick="toggleGame('DODGE')"><div class="badge">0</div><span>💥</span><p>LASER DODGE</p></div>
+                    <div class="game-card" id="card-CATCH" onclick="toggleGame('CATCH')"><div class="badge">0</div><span>💎</span><p>CATCH CORE</p></div>
+                    <div class="game-card" id="card-BOMB" onclick="toggleGame('BOMB')"><div class="badge">0</div><span>💣</span><p>BOMB TAG</p></div>
+                    <div class="game-card" id="card-TRON" onclick="toggleGame('TRON')"><div class="badge">0</div><span>🏍️</span><p>SNAKE TRON</p></div>
+                    <div class="game-card" id="card-SNIPER" onclick="toggleGame('SNIPER')"><div class="badge">0</div><span>🎯</span><p>GHOST SNIPER</p></div>
+                    
+                    <div class="game-card" id="card-JUMP" onclick="toggleGame('JUMP')"><div class="badge">0</div><span>🦘</span><p>JUMP LASER</p></div>
+                    <div class="game-card" id="card-PAINT" onclick="toggleGame('PAINT')"><div class="badge">0</div><span>🎨</span><p>NEON PAINT</p></div>
+                    <div class="game-card" id="card-ZOMBIE" onclick="toggleGame('ZOMBIE')"><div class="badge">0</div><span>🧟</span><p>ZOMBIE CO-OP</p></div>
+                    <div class="game-card" id="card-HOOPS" onclick="toggleGame('HOOPS')"><div class="badge">0</div><span>🏀</span><p>NEON HOOPS</p></div>
+                </div>
+                <button id="btn-start-game" class="btn btn-green" style="margin-top: 1vw; font-size: 2vw; width: 80%;" onclick="startHostGame()">START PLAYLIST</button>
+                <div id="waiting-text" class="hidden" style="color: #a3e635; margin-top: 1vw; font-size: 1.5vw;">WAITING FOR HOST TO START...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-screen" class="overlay hidden">
+        <div class="spinner"></div>
+        <h1 id="loading-text" style="color: #00f2ff;">PREPARING NEXT ROUND...</h1>
+    </div>
+
+    <div id="win-screen" class="overlay hidden">
+        <h2 id="win-subtitle" style="color: #fff;">ROUND OVER</h2>
+        <h1 id="win-title" style="color: #facc15; font-size: 6vw;">PLAYER 1 WINS!</h1>
+        <div id="series-scoreboard" style="display: flex; gap: 2vw; margin-top: 3vw;"></div>
+        
+        <div id="host-win-controls" class="hidden" style="margin-top: 3vw; display: flex; gap: 2vw;">
+            <button class="btn btn-green" onclick="startNextRound()">NEXT ROUND</button>
+            <button class="btn btn-red" onclick="returnToLobby()">END SERIES (LOBBY)</button>
+        </div>
+        <div id="client-win-text" style="color: #a3e635; margin-top: 3vw; font-size: 1.5vw;">Waiting for Host...</div>
+        <button class="btn btn-red" style="position: absolute; bottom: 2vw; right: 2vw;" onclick="leaveRoom()">LEAVE ROOM</button>
+    </div>
+
+    <div id="toast">Message</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const colors = ['#00f2ff', '#ff0055', '#a3e635', '#facc15']; 
+    
+    let myName = "Player"; let myDevice = "PC"; let myId = "";
+    let roomCode = ""; let isHost = true; let isOfflineMode = false; let isRoomPublic = false;
+    let players = []; let gameState = 'MENU';
+    let maxPlayers = 4; let gameVars = {}; let lastTime = 0;
+    
+    let playlist = []; let currentRoundIndex = 0;
+    let peer = null; let connections = []; let hostConn = null;
+    let entities = []; let particles = []; let keys = {};
+
+    window.addEventListener('keydown', e => { if(gameState === 'PLAY') keys[e.key.toLowerCase()] = true; });
+    window.addEventListener('keyup', e => { if(gameState === 'PLAY') keys[e.key.toLowerCase()] = false; });
+
+    const bindTouch = (id, k) => {
+        let el = document.getElementById(id);
+        el.addEventListener('touchstart', (e)=>{ e.preventDefault(); keys[k]=true; el.style.background="rgba(255,255,255,0.5)";});
+        el.addEventListener('touchend', (e)=>{ e.preventDefault(); keys[k]=false; el.style.background="";});
+        el.addEventListener('mousedown', (e)=>{ keys[k]=true; el.style.background="rgba(255,255,255,0.5)";});
+        el.addEventListener('mouseup', (e)=>{ keys[k]=false; el.style.background="";});
+    };
+    bindTouch('btn-up', 'w'); bindTouch('btn-down', 's'); 
+    bindTouch('btn-left', 'a'); bindTouch('btn-right', 'd'); bindTouch('btn-action', ' ');
+
+    function showScreen(id) {
+        ['menu-setup', 'menu-main', 'menu-offline', 'menu-online', 'menu-lobby', 'loading-screen', 'win-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+        if(id) document.getElementById(id).classList.remove('hidden');
+    }
+    function showToast(msg) {
+        let t = document.getElementById('toast'); t.innerText = msg; t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 3000);
+    }
+    function getDeviceIcon(dev) { return dev === 'PC' ? '💻' : '📱'; }
+
+    function finishSetup(deviceType) {
+        let name = document.getElementById('player-nickname').value.trim();
+        myName = name === "" ? "P_" + Math.floor(Math.random()*100) : name.toUpperCase();
+        myDevice = deviceType; myId = Math.random().toString(36).substring(2, 9);
+        document.getElementById('welcome-text').innerText = `${myName} ${getDeviceIcon(myDevice)}`; showScreen('menu-main');
+    }
+
+    // --- P2P NETWORKING ---
+    function hostBroadcast(type, data) { if(!isOfflineMode) connections.forEach(c => c.send({type, ...data})); }
+
+    function initLobby(offline, host) {
+        isOfflineMode = offline; isHost = host;
+        playlist = ['SUMO']; currentRoundIndex = 0; 
+        players = [{ id: myId, name: myName, device: myDevice, isBot: false, color: colors[0], score: 0, seriesWins: 0 }];
+        
+        if (offline) {
+            maxPlayers = parseInt(document.getElementById('bot-count').value);
+            document.getElementById('lobby-title').innerText = "OFFLINE BOTS";
+            document.getElementById('room-visibility').innerText = "[LOCAL MODE]";
+            for(let i=1; i<maxPlayers; i++) addBot();
+            updateLobbyUI(); showScreen('menu-lobby');
+        } else {
+            maxPlayers = 4; isRoomPublic = false;
+            roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            document.getElementById('lobby-title').innerText = "ROOM: " + roomCode;
+            document.getElementById('room-visibility').innerText = "[PRIVATE ROOM]";
+            showToast("Generating Room...");
+            
+            peer = new Peer('wldn-' + roomCode);
+            peer.on('open', () => { showToast("Room Ready!"); updateLobbyUI(); showScreen('menu-lobby'); });
+            peer.on('connection', (conn) => {
+                connections.push(conn);
+                conn.on('data', (data) => {
+                    if(data.type === 'JOIN') {
+                        if(players.length >= maxPlayers) { conn.send({type: 'ERROR', msg: 'Full!'}); return; }
+                        players.push({ id: data.id, name: data.name, device: data.device, isBot: false, color: colors[players.length], score: 0, seriesWins: 0 });
+                        hostBroadcast('LOBBY', {players, playlist}); updateLobbyUI(); showToast(`${data.name} Joined!`);
+                    }
+                    if(data.type === 'INPUT') { let p = players.find(x => x.id === data.id); if(p) p.keys = data.keys; }
+                });
+                conn.on('close', () => {
+                    connections = connections.filter(c => c !== conn); players = players.filter(p => p.id !== conn.peer); 
+                    hostBroadcast('LOBBY', {players, playlist}); updateLobbyUI();
+                });
+            });
+        }
+    }
+
+    function joinRoom() {
+        let code = document.getElementById('room-code-input').value.toUpperCase();
+        if(code.length < 4) return showToast("Invalid Code!");
+        isHost = false; isOfflineMode = false; roomCode = code;
+        document.getElementById('lobby-title').innerText = "JOINING: " + roomCode;
+        showToast("Connecting...");
+        
+        peer = new Peer(myId);
+        peer.on('open', () => {
+            hostConn = peer.connect('wldn-' + roomCode);
+            hostConn.on('open', () => {
+                showToast("Connected!"); hostConn.send({ type: 'JOIN', id: myId, name: myName, device: myDevice }); showScreen('menu-lobby');
+            });
+            hostConn.on('data', (data) => {
+                if(data.type === 'ERROR') { showToast(data.msg); leaveRoom(); }
+                if(data.type === 'LOBBY') { players = data.players; playlist = data.playlist; updateLobbyUI(); showScreen('menu-lobby'); document.getElementById('in-game-hud').classList.add('hidden');}
+                if(data.type === 'START') { currentRoundIndex = data.roundIdx; showLoadingAndStart(playlist[currentRoundIndex]); }
+                if(data.type === 'STATE') {
+                    players = data.players; entities = data.entities; updateHUD();
+                    if(data.gameState === 'WIN' && gameState !== 'WIN') {
+                        let winner = players.reduce((p, c) => (p.score > c.score) ? p : c); showWinScreen(winner.name, winner.color);
+                    }
+                }
+            });
+        });
+    }
+
+    function leaveRoom() {
+        if(peer) peer.destroy(); connections = []; hostConn = null;
+        showScreen('menu-main'); showToast("Left Room"); if(window.looping) gameState = 'MENU';
+    }
+
+    function addBot() {
+        if(players.length >= maxPlayers) return showToast("Full!");
+        players.push({ id: `bot_${players.length}`, name: `BOT ${players.length}`, device: 'PC', isBot: true, color: colors[players.length], score: 0, seriesWins: 0 });
+        updateLobbyUI(); hostBroadcast('LOBBY', {players, playlist});
+    }
+
+    function togglePublic() {
+        isRoomPublic = !isRoomPublic; document.getElementById('room-visibility').innerText = isRoomPublic ? "[PUBLIC SERVER]" : "[PRIVATE ROOM]";
+        document.getElementById('room-visibility').style.color = isRoomPublic ? "#a3e635" : "#ef4444"; showToast(isRoomPublic ? "Room is Public!" : "Room is Private");
+    }
+
+    function toggleGame(game) {
+        if(!isHost) return;
+        let idx = playlist.indexOf(game);
+        if(idx > -1) {
+            if(playlist.length === 1) return showToast("Must select at least 1 game!");
+            playlist.splice(idx, 1);
+        } else { playlist.push(game); }
+        updateLobbyUI(); hostBroadcast('LOBBY', {players, playlist});
+    }
+
+    function updateLobbyUI() {
+        let list = document.getElementById('player-list'); list.innerHTML = '';
+        players.forEach((p, i) => {
+            let badge = p.id === myId ? '(YOU)' : (p.isBot ? '🤖' : getDeviceIcon(p.device));
+            list.innerHTML += `<div class="player-slot p${i+1}">${p.name} <span style="color:#facc15">🏆x${p.seriesWins}</span> ${badge}</div>`;
+        });
+        document.getElementById('player-count').innerText = `${players.length}/${maxPlayers}`;
+        document.getElementById('host-controls').style.display = isHost ? 'flex' : 'none';
+        document.getElementById('btn-start-game').style.display = isHost ? 'block' : 'none';
+        document.getElementById('btn-toggle-public').style.display = isHost ? 'block' : 'none';
+        document.getElementById('waiting-text').style.display = isHost ? 'none' : 'block';
+        
+        document.querySelectorAll('.game-card').forEach(c => { c.classList.remove('selected'); c.querySelector('.badge').innerText = ''; });
+        playlist.forEach((game, idx) => {
+            let card = document.getElementById(`card-${game}`);
+            if(card) { card.classList.add('selected'); card.querySelector('.badge').innerText = idx + 1; }
+        });
+    }
+
+    function updateHUD() {
+        let hud = document.getElementById('in-game-hud'); hud.innerHTML = '';
+        players.forEach((p, i) => {
+            if(!p.alive && gameState === 'PLAY') return; // Hide dead player score if preferred, but let's keep it visible
+            hud.innerHTML += `<div class="score-box" style="border-color: ${p.color}; opacity: ${p.alive ? 1 : 0.5}">
+                                ${p.name} <span class="series">🏆 ${p.seriesWins}</span>
+                                <div style="font-size: 2vw;">${p.score}</div>
+                              </div>`;
+        });
+    }
+
+    // --- PLAYLIST FLOW FIX ---
+    function startHostGame() {
+        if(players.length < 2) return showToast("Min 2 Players!");
+        currentRoundIndex = 0; players.forEach(p => p.seriesWins = 0); 
+        hostBroadcast('START', {roundIdx: currentRoundIndex}); 
+        showLoadingAndStart(playlist[currentRoundIndex]);
+    }
+
+    function startNextRound() {
+        if(!isHost) return;
+        currentRoundIndex++;
+        if(currentRoundIndex >= playlist.length) { returnToLobby(); } 
+        else { hostBroadcast('START', {roundIdx: currentRoundIndex}); showLoadingAndStart(playlist[currentRoundIndex]); }
+    }
+
+    // FIXED TRANSITION
+    function showLoadingAndStart(gameName) {
+        showScreen('loading-screen'); // Show Loading for both Host & Client
+        document.getElementById('loading-text').innerText = `LOADING ROUND ${currentRoundIndex + 1}: ${gameName}`;
+        gameState = 'LOADING';
+        
+        setTimeout(() => {
+            startGameLocal(gameName);
+        }, 2000); // 2 Seconds Transition
+    }
+
+    function startGameLocal(gameName) {
+        showScreen(''); 
+        document.getElementById('in-game-hud').classList.remove('hidden');
+        if(myDevice === 'MOBILE') document.getElementById('mobile-controls').classList.remove('hidden');
+
+        let ann = document.getElementById('round-announcer');
+        ann.innerText = `ROUND ${currentRoundIndex + 1}: ${gameName}`;
+        ann.style.opacity = 1; setTimeout(() => ann.style.opacity = 0, 2000);
+
+        gameState = 'PLAY'; particles = []; entities = []; gameVars = { timer: 0 };
+        keys = {}; // Reset local input
+        
+        // --- 12 GAMES SETUP ---
+        players.forEach((p, i) => {
+            p.score = 0; p.vx = 0; p.vy = 0; p.alive = true; p.keys = {}; p.stun = 0;
+            if(gameName === 'SUMO') { p.r = 30; p.x = 640 + Math.cos(i*Math.PI/2)*150; p.y = 360 + Math.sin(i*Math.PI/2)*150; }
+            if(gameName === 'TANKS') { p.r = 20; p.x = 200 + (i%2)*880; p.y = 200 + Math.floor(i/2)*320; p.angle = 0; p.cooldown = 0; }
+            if(gameName === 'SPEED') { p.x = 100; p.y = 150 + i*120; p.w = 40; p.h = 40; }
+            if(gameName === 'DODGE') { p.r = 20; p.x = 300 + i*200; p.y = 650; }
+            if(gameName === 'CATCH') { p.x = 300 + i*200; p.y = 650; p.w = 60; p.h = 20; }
+            if(gameName === 'BOMB') { p.r = 25; p.x = 300 + i*200; p.y = 360; p.isBomb = (i===0); }
+            if(gameName === 'TRON') { p.r = 10; p.x = 300 + (i%2)*600; p.y = 200 + Math.floor(i/2)*300; p.angle = i*Math.PI/2; p.trail = []; }
+            if(gameName === 'SNIPER') { p.r = 20; p.x = Math.random()*1000+100; p.y = Math.random()*500+100; p.cooldown = 0; p.vis = 0; }
+            if(gameName === 'JUMP') { p.r = 20; p.x = 300 + i*200; p.y = 360; p.z = 0; p.vz = 0; gameVars.laserAngle = 0; }
+            if(gameName === 'PAINT') { p.r = 15; p.x = 640; p.y = 360; 
+                if(i===0) { gameVars.tiles = []; for(let x=0; x<32; x++) for(let y=0; y<18; y++) gameVars.tiles.push({x:x*40, y:y*40, owner: -1}); }
+            }
+            if(gameName === 'ZOMBIE') { p.r = 20; p.x = 600 + i*40; p.y = 360; p.cooldown = 0; }
+            if(gameName === 'HOOPS') { p.x = 300 + i*200; p.y = 600; p.w=40; p.h=40; p.cooldown=0; gameVars.hoopX = 640; gameVars.hoopDir = 5; }
+        });
+
+        updateHUD();
+        lastTime = performance.now();
+        if(!window.looping) { window.looping = true; requestAnimationFrame(gameLoop); }
+    }
+
+    function showWinScreen(winnerName, winnerColor) {
+        gameState = 'WIN'; document.getElementById('mobile-controls').classList.add('hidden');
+        let isSeriesEnd = (currentRoundIndex + 1) >= playlist.length;
+        document.getElementById('win-subtitle').innerText = isSeriesEnd ? "SERIES OVER!" : `ROUND ${currentRoundIndex+1} OVER`;
+        document.getElementById('win-title').innerText = `${winnerName} WINS!`;
+        document.getElementById('win-title').style.color = winnerColor;
+        
+        let sb = document.getElementById('series-scoreboard'); sb.innerHTML = '';
+        players.forEach(p => {
+            sb.innerHTML += `<div style="background: rgba(0,0,0,0.8); border: 2px solid ${p.color}; padding: 1vw; border-radius: 1vw; color: #fff;">
+                                <div style="font-size: 1.5vw;">${p.name}</div>
+                                <div style="font-size: 3vw; color: #facc15;">🏆 ${p.seriesWins}</div>
+                             </div>`;
+        });
+        document.getElementById('host-win-controls').style.display = isHost ? 'flex' : 'none';
+        document.getElementById('client-win-text').style.display = isHost ? 'none' : 'block';
+        showScreen('win-screen');
+    }
+
+    function returnToLobby() {
+        if(!isHost) return;
+        gameState = 'LOBBY'; document.getElementById('in-game-hud').classList.add('hidden');
+        hostBroadcast('LOBBY', {players, playlist}); updateLobbyUI(); showScreen('menu-lobby');
+    }
+
+    function spawnExplosion(x, y, color, amt=10) {
+        for(let i=0; i<amt; i++) particles.push({ x, y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, life: 1, col: color, size: Math.random()*5+3 });
+    }
+
+    // --- GAME ENGINE UPDATE ---
+    function update(dt) {
+        if(gameState !== 'PLAY') return;
+        let cg = playlist[currentRoundIndex]; 
+
+        let myP = players.find(p => p.id === myId);
+        if(myP && myP.alive) {
+            myP.keys = keys;
+            if(!isHost) hostConn.send({type: 'INPUT', id: myId, keys: keys}); 
+        }
+
+        if(isHost) {
+            gameVars.timer++;
+
+            players.forEach((p, i) => {
+                if(!p.alive) return;
+                let k = p.keys || {};
+                
+                // --- MOVEMENT CONTROLS ---
+                if(['SUMO','DODGE','BOMB','SNIPER','PAINT','ZOMBIE'].includes(cg)) {
+                    if(p.stun > 0) p.stun--;
+                    else {
+                        if(k['w']) p.vy -= 1.2; if(k['s']) p.vy += 1.2;
+                        if(k['a']) p.vx -= 1.2; if(k['d']) p.vx += 1.2;
+                    }
+                }
+                if(cg === 'TANKS') {
+                    if(k['w']) { p.x += Math.cos(p.angle)*4; p.y += Math.sin(p.angle)*4; }
+                    if(k['s']) { p.x -= Math.cos(p.angle)*2; p.y -= Math.sin(p.angle)*2; }
+                    if(k['a']) p.angle -= 0.06; if(k['d']) p.angle += 0.06;
+                    if(k[' '] && p.cooldown <= 0) { entities.push({type:'bullet', x:p.x, y:p.y, vx:Math.cos(p.angle)*12, vy:Math.sin(p.angle)*12, owner:i, life:80}); p.cooldown = 25; }
+                }
+                if(['SPEED', 'CATCH', 'HOOPS'].includes(cg)) { if(k['a']) p.x -= 6; if(k['d']) p.x += 6; }
+                if(cg === 'TRON') {
+                    p.x += Math.cos(p.angle)*5; p.y += Math.sin(p.angle)*5;
+                    if(k['a'] && p.cooldown<=0) { p.angle -= Math.PI/2; p.cooldown=10;}
+                    if(k['d'] && p.cooldown<=0) { p.angle += Math.PI/2; p.cooldown=10;}
+                    if(gameVars.timer % 3 === 0) p.trail.push({x: p.x, y: p.y}); if(p.trail.length > 100) p.trail.shift();
+                }
+                if(cg === 'SNIPER') {
+                    if(k[' '] && p.cooldown <= 0) { entities.push({type:'laser', x:p.x, y:p.y, vx: p.vx*10 || 10, vy: p.vy*10 || 0, owner:i, life:50}); p.cooldown = 40; p.vis = 30; }
+                    if(p.vis > 0) p.vis--;
+                }
+                if(cg === 'JUMP') {
+                    if(k[' '] && p.z === 0) p.vz = 15; // Jump
+                    p.z += p.vz; p.vz -= 1; // Gravity
+                    if(p.z <= 0) { p.z = 0; p.vz = 0; }
+                }
+                if(cg === 'ZOMBIE') {
+                    // Auto aim nearest zombie
+                    let t = entities.find(e => e.type === 'zombie');
+                    if(t && k[' '] && p.cooldown <= 0) {
+                        let a = Math.atan2(t.y - p.y, t.x - p.x);
+                        entities.push({type:'bullet', x:p.x, y:p.y, vx:Math.cos(a)*15, vy:Math.sin(a)*15, owner:i, life:60}); p.cooldown = 15;
+                    }
+                }
+                if(cg === 'HOOPS') {
+                    if(k[' '] && p.cooldown <= 0) { entities.push({type:'ball', x:p.x+20, y:p.y, vy:-10, owner:i}); p.cooldown = 30; }
+                }
+
+                if(p.cooldown > 0) p.cooldown--;
+
+                // --- BOT AI ---
+                if(p.isBot) {
+                    if(cg === 'SUMO') { let t = players.find(x => x.id !== p.id && x.alive); if(t) { let a = Math.atan2(t.y - p.y, t.x - p.x); p.vx += Math.cos(a)*0.8; p.vy += Math.sin(a)*0.8; } }
+                    if(cg === 'TANKS') {
+                        let t = players.find(x => x.id !== p.id && x.alive);
+                        if(t) {
+                            let diff = Math.atan2(t.y - p.y, t.x - p.x) - p.angle; while(diff < -Math.PI) diff += Math.PI*2; while(diff > Math.PI) diff -= Math.PI*2;
+                            p.angle += Math.sign(diff)*0.04;
+                            if(Math.abs(diff) < 0.2 && p.cooldown <= 0) { entities.push({type:'bullet', x:p.x, y:p.y, vx:Math.cos(p.angle)*12, vy:Math.sin(p.angle)*12, owner:i, life:80}); p.cooldown = 50; }
+                            if(Math.hypot(t.x-p.x, t.y-p.y)>200) { p.x += Math.cos(p.angle)*2; p.y += Math.sin(p.angle)*2; }
+                        }
+                    }
+                    if(cg === 'SPEED') { if(Math.random()<0.2) p.x += 12; }
+                    if(cg === 'DODGE') { p.vx += (Math.random()-0.5)*2; }
+                    if(cg === 'CATCH') { let c = entities.find(e => Math.abs(e.x - p.x) < 200 && e.y < p.y); if(c) p.x += (c.x > p.x ? 5 : -5); }
+                    if(cg === 'BOMB') {
+                        if(p.isBomb) { let t = players.find(x => x.id !== p.id && x.alive); if(t) { let a = Math.atan2(t.y - p.y, t.x - p.x); p.vx += Math.cos(a)*1; p.vy += Math.sin(a)*1; } }
+                        else { let t = players.find(x => x.isBomb); if(t) { let a = Math.atan2(p.y - t.y, p.x - t.x); p.vx += Math.cos(a)*0.8; p.vy += Math.sin(a)*0.8; } }
+                    }
+                    if(cg === 'TRON') { if(p.x<100 || p.x>1180 || p.y<100 || p.y>620) { if(p.cooldown<=0) {p.angle += Math.PI/2; p.cooldown=20;} } }
+                    if(cg === 'SNIPER') {
+                        p.vx += (Math.random()-0.5); p.vy += (Math.random()-0.5);
+                        if(Math.random()<0.01 && p.cooldown<=0) { entities.push({type:'laser', x:p.x, y:p.y, vx:(Math.random()-0.5)*20, vy:(Math.random()-0.5)*20, owner:i, life:50}); p.cooldown=60; p.vis=30; }
+                    }
+                    if(cg === 'JUMP') { if(gameVars.laserAngle > Math.PI && gameVars.laserAngle < Math.PI + 0.5 && p.z === 0 && Math.random() < 0.8) p.vz = 15; }
+                    if(cg === 'PAINT') { p.vx += (Math.random()-0.5)*2; p.vy += (Math.random()-0.5)*2; }
+                    if(cg === 'ZOMBIE') {
+                        let z = entities.find(e => e.type === 'zombie');
+                        if(z) { let a = Math.atan2(p.y - z.y, p.x - z.x); p.vx += Math.cos(a)*0.5; p.vy += Math.sin(a)*0.5; if(p.cooldown<=0){ entities.push({type:'bullet', x:p.x, y:p.y, vx:-Math.cos(a)*15, vy:-Math.sin(a)*15, owner:i, life:60}); p.cooldown=30; } }
+                    }
+                    if(cg === 'HOOPS') { p.x += (gameVars.hoopX - p.x > 0 ? 4 : -4); if(Math.abs(gameVars.hoopX - p.x) < 20 && p.cooldown <= 0) { entities.push({type:'ball', x:p.x+20, y:p.y, vy:-10, owner:i}); p.cooldown = 40; } }
+                }
+            });
+
+            // --- MINIGAMES RULES ---
+            let alive = players.filter(p => p.alive);
+            let checkWin = () => {
+                if(alive.length === 1) {
+                    alive[0].seriesWins++; 
+                    let winner = players.reduce((p, c) => (p.score > c.score) ? p : c);
+                    if(['SUMO','TANKS','DODGE','BOMB','TRON','SNIPER','JUMP','ZOMBIE'].includes(cg)) winner = alive[0]; 
+                    hostBroadcast('STATE', {players, entities, gameState: 'WIN'}); updateHUD(); showWinScreen(winner.name, winner.color);
+                }
+            };
+
+            if(['SUMO', 'DODGE', 'BOMB', 'SNIPER', 'PAINT', 'ZOMBIE'].includes(cg)) {
+                players.forEach(p => { if(!p.alive) return; p.x += p.vx; p.y += p.vy; p.vx *= 0.9; p.vy *= 0.9; p.x = Math.max(20, Math.min(1260, p.x)); p.y = Math.max(20, Math.min(700, p.y)); });
+            }
+
+            if(cg === 'SUMO') {
+                players.forEach(p => {
+                    if(!p.alive) return;
+                    players.forEach(t => {
+                        if(p.id !== t.id && t.alive && Math.hypot(t.x-p.x, t.y-p.y) < p.r+t.r) {
+                            let a = Math.atan2(t.y-p.y, t.x-p.x);
+                            p.vx -= Math.cos(a)*2; p.vy -= Math.sin(a)*2; t.vx += Math.cos(a)*2; t.vy += Math.sin(a)*2; spawnExplosion(p.x, p.y, '#fff', 1);
+                        }
+                    });
+                    if(Math.hypot(p.x-640, p.y-360) > 300) { p.alive = false; spawnExplosion(p.x, p.y, p.color, 30); }
+                }); checkWin();
+            }
+
+            if(cg === 'TANKS') {
+                players.forEach(p => { p.x = Math.max(20, Math.min(1260, p.x)); p.y = Math.max(20, Math.min(700, p.y)); });
+                entities.forEach((b, i) => {
+                    b.x += b.vx; b.y += b.vy; b.life--;
+                    if(b.life <= 0 || b.x<0 || b.x>1280 || b.y<0 || b.y>720) entities.splice(i,1);
+                    else { players.forEach((p, pIdx) => { if(p.alive && b.owner !== pIdx && Math.hypot(b.x-p.x, b.y-p.y) < p.r) { p.alive = false; entities.splice(i,1); spawnExplosion(p.x, p.y, p.color, 30); } }); }
+                }); checkWin();
+            }
+
+            if(cg === 'SPEED') {
+                players.forEach(p => { p.x = Math.max(100, Math.min(1100, p.x)); if(p.x >= 1050) { p.seriesWins++; hostBroadcast('STATE', {players, entities, gameState: 'WIN'}); updateHUD(); showWinScreen(p.name, p.color); } });
+            }
+
+            if(cg === 'DODGE') {
+                if(gameVars.timer % 15 === 0) entities.push({x: Math.random()*1280, y: -50, vy: 5+Math.random()*6, r: 15});
+                entities.forEach((e, i) => {
+                    e.y += e.vy;
+                    if(e.y > 800) entities.splice(i,1);
+                    else { players.forEach(p => { if(p.alive && Math.hypot(e.x-p.x, e.y-p.y) < p.r+e.r) { p.alive = false; spawnExplosion(p.x, p.y, p.color, 30); } }); }
+                }); if(players.length > 1) checkWin();
+            }
+
+            if(cg === 'CATCH') {
+                if(gameVars.timer % 25 === 0) entities.push({x: 50+Math.random()*1180, y: -20, vy: 5});
+                players.forEach(p => p.x = Math.max(0, Math.min(1280-p.w, p.x)));
+                entities.forEach((e, i) => {
+                    e.y += e.vy;
+                    if(e.y > 720) entities.splice(i,1);
+                    else {
+                        players.forEach((p, idx) => {
+                            if(e.x > p.x && e.x < p.x+p.w && e.y > p.y && e.y < p.y+p.h) {
+                                p.score++; entities.splice(i,1); spawnExplosion(e.x, e.y, p.color, 10);
+                                if(p.score >= 10) { p.seriesWins++; hostBroadcast('STATE', {players, entities, gameState: 'WIN'}); updateHUD(); showWinScreen(p.name, p.color); }
+                            }
+                        });
+                    }
+                });
+            }
+
+            if(cg === 'BOMB') {
+                players.forEach(p => {
+                    if(!p.alive || !p.isBomb) return;
+                    players.forEach(t => { if(p.id !== t.id && t.alive && Math.hypot(t.x-p.x, t.y-p.y) < p.r+t.r && p.stun <= 0) { p.isBomb = false; t.isBomb = true; t.stun = 30; spawnExplosion(t.x, t.y, '#ef4444', 15); } });
+                });
+                if(gameVars.timer % (60 * 10) === 0 && alive.length > 1) { 
+                    let b = players.find(x => x.isBomb && x.alive);
+                    if(b) { b.alive = false; spawnExplosion(b.x, b.y, '#ef4444', 50); let next = players.find(x => x.alive); if(next) { next.isBomb = true; next.stun = 30; } }
+                } checkWin();
+            }
+
+            if(cg === 'TRON') {
+                players.forEach(p => {
+                    if(!p.alive) return;
+                    if(p.x<0 || p.x>1280 || p.y<0 || p.y>720) { p.alive = false; spawnExplosion(p.x,p.y,p.color,20); return;}
+                    players.forEach(t => { t.trail.forEach(tr => { if(Math.hypot(tr.x-p.x, tr.y-p.y) < p.r) { p.alive=false; spawnExplosion(p.x,p.y,p.color,20); } }); });
+                }); checkWin();
+            }
+
+            if(cg === 'SNIPER') {
+                entities.forEach((b, i) => {
+                    b.x += b.vx; b.y += b.vy; b.life--;
+                    if(b.life <= 0 || b.x<0 || b.x>1280 || b.y<0 || b.y>720) entities.splice(i,1);
+                    else { players.forEach((p, pIdx) => { if(p.alive && b.owner !== pIdx && Math.hypot(b.x-p.x, b.y-p.y) < p.r) { p.alive = false; entities.splice(i,1); p.vis=100; spawnExplosion(p.x, p.y, p.color, 30); } }); }
+                }); checkWin();
+            }
+
+            if(cg === 'JUMP') {
+                gameVars.laserAngle += 0.05;
+                let lx = 640 + Math.cos(gameVars.laserAngle) * 600; let ly = 360 + Math.sin(gameVars.laserAngle) * 600;
+                players.forEach(p => {
+                    if(!p.alive) return;
+                    // Check laser distance and player height
+                    let distToCenter = Math.hypot(p.x - 640, p.y - 360);
+                    let distToLaserEnd = Math.hypot(p.x - lx, p.y - ly);
+                    // Simple collision: if player is near the laser line and not jumping high enough
+                    if(Math.abs(Math.atan2(p.y - 360, p.x - 640) - gameVars.laserAngle) < 0.1 && p.z < 20) {
+                        p.alive = false; spawnExplosion(p.x, p.y, p.color, 30);
+                    }
+                });
+                if(players.length > 1) checkWin();
+            }
+
+            if(cg === 'PAINT') {
+                players.forEach((p, idx) => {
+                    let tX = Math.floor(p.x / 40); let tY = Math.floor(p.y / 40);
+                    let tile = gameVars.tiles.find(t => t.x === tX*40 && t.y === tY*40);
+                    if(tile && tile.owner !== idx) { if(tile.owner !== -1) players[tile.owner].score--; tile.owner = idx; p.score++; }
+                });
+                if(gameVars.timer > 60 * 30) { // 30 sec limit
+                    let winner = players.reduce((prev, curr) => (prev.score > curr.score) ? prev : curr);
+                    winner.seriesWins++; hostBroadcast('STATE', {players, entities, gameState: 'WIN'}); updateHUD(); showWinScreen(winner.name, winner.color);
+                }
+            }
+
+            if(cg === 'ZOMBIE') {
+                if(gameVars.timer % 60 === 0) entities.push({type: 'zombie', x: Math.random()>0.5?0:1280, y: Math.random()*720, hp: 3});
+                entities.forEach((e, i) => {
+                    if(e.type === 'zombie') {
+                        // Move to nearest player
+                        let target = alive[0]; let minDist = 9999;
+                        alive.forEach(p => { let d = Math.hypot(p.x-e.x, p.y-e.y); if(d < minDist) { minDist = d; target = p; } });
+                        if(target) { let a = Math.atan2(target.y - e.y, target.x - e.x); e.x += Math.cos(a)*2; e.y += Math.sin(a)*2; }
+                        // Bite player
+                        if(minDist < 30) { target.alive = false; spawnExplosion(target.x, target.y, '#ef4444', 30); }
+                    }
+                    if(e.type === 'bullet') {
+                        e.x += e.vx; e.y += e.vy; e.life--;
+                        if(e.life <= 0) entities.splice(i,1);
+                        else {
+                            let z = entities.find(z => z.type === 'zombie' && Math.hypot(z.x-e.x, z.y-e.y) < 20);
+                            if(z) { z.hp--; entities.splice(i,1); spawnExplosion(z.x, z.y, '#22c55e', 5); if(z.hp<=0) entities.splice(entities.indexOf(z), 1); }
+                        }
+                    }
+                }); checkWin(); // If all dead, game over (last one standing wins)
+            }
+
+            if(cg === 'HOOPS') {
+                gameVars.hoopX += gameVars.hoopDir; if(gameVars.hoopX > 1100 || gameVars.hoopX < 180) gameVars.hoopDir *= -1;
+                players.forEach(p => p.x = Math.max(0, Math.min(1240, p.x)));
+                entities.forEach((e, i) => {
+                    if(e.type === 'ball') {
+                        e.y += e.vy;
+                        if(e.y < 100) {
+                            if(Math.abs(e.x - gameVars.hoopX) < 40) {
+                                players[e.owner].score++; spawnExplosion(gameVars.hoopX, 100, '#facc15', 20);
+                                if(players[e.owner].score >= 10) { players[e.owner].seriesWins++; hostBroadcast('STATE', {players, entities, gameState: 'WIN'}); updateHUD(); showWinScreen(players[e.owner].name, players[e.owner].color); }
+                            }
+                            entities.splice(i,1);
+                        }
+                    }
+                });
+            }
+
+            // Sync ke Semua Client Tiap Frame Biar Angka Skor Update!
+            updateHUD(); 
+            hostBroadcast('STATE', {players, entities, gameState});
+        }
+
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.alpha -= 0.05; }); particles = particles.filter(p => p.alpha > 0);
+    }
+
+    // --- RENDER ---
+    function draw() {
+        ctx.clearRect(0, 0, 1280, 720);
+        ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+        for(let i=0; i<1280; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,720); ctx.stroke(); }
+        for(let i=0; i<720; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(1280,i); ctx.stroke(); }
+
+        if(gameState !== 'PLAY') return;
+        let cg = playlist[currentRoundIndex];
+
+        // Draw Arena specific
+        if(cg === 'SUMO') { ctx.beginPath(); ctx.arc(640, 360, 300, 0, Math.PI*2); ctx.strokeStyle = '#facc15'; ctx.lineWidth = 5; ctx.stroke(); }
+        if(cg === 'SPEED') { ctx.fillStyle = '#1e293b'; ctx.fillRect(100, 100, 1000, 500); ctx.fillStyle = '#10b981'; ctx.fillRect(1050, 100, 50, 500); }
+        if(cg === 'JUMP') { 
+            ctx.beginPath(); ctx.arc(640, 360, 20, 0, Math.PI*2); ctx.fillStyle = '#ef4444'; ctx.fill(); 
+            if(isHost) { // Draw laser
+                let lx = 640 + Math.cos(gameVars.laserAngle) * 600; let ly = 360 + Math.sin(gameVars.laserAngle) * 600;
+                ctx.beginPath(); ctx.moveTo(640, 360); ctx.lineTo(lx, ly); ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 10; ctx.stroke();
+            }
+        }
+        if(cg === 'PAINT' && isHost) { gameVars.tiles.forEach(t => { if(t.owner !== -1) { ctx.fillStyle = colors[t.owner]; ctx.globalAlpha = 0.5; ctx.fillRect(t.x, t.y, 40, 40); ctx.globalAlpha = 1; } }); }
+        if(cg === 'HOOPS') { ctx.fillStyle = '#facc15'; ctx.fillRect(gameVars.hoopX - 40, 80, 80, 20); } // Backboard
+
+        // Draw Players
+        players.forEach(p => {
+            if(!p.alive) return;
+            if(cg === 'SNIPER' && p.id !== myId && p.vis <= 0) return; // Ghost Mechanic
+
+            ctx.shadowBlur = 15; ctx.shadowColor = p.color; ctx.fillStyle = p.color;
+
+            // Z-axis visual for JUMP
+            let py = p.y; let s = 1.0;
+            if(cg === 'JUMP') { py -= p.z; s = 1 + (p.z/100); } // Scale up when jumping
+
+            if(['SUMO','DODGE','BOMB','SNIPER','JUMP','PAINT','ZOMBIE'].includes(cg)) {
+                ctx.globalAlpha = (cg === 'SNIPER' && p.id === myId && p.vis <= 0) ? 0.3 : 1.0; 
+                ctx.beginPath(); ctx.arc(p.x, py, p.r * s, 0, Math.PI*2); ctx.fill();
+                if(p.isBomb) { 
+                    ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.beginPath(); ctx.arc(p.x, py, (p.r+5)*s, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.font = '20px Orbitron'; ctx.fillText('💣', p.x, py+7);
+                }
+                ctx.globalAlpha = 1.0;
+            }
+            if(cg === 'TANKS') { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle); ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-15, -15); ctx.lineTo(-15, 15); ctx.fill(); ctx.restore(); }
+            if(['SPEED', 'CATCH', 'HOOPS'].includes(cg)) { ctx.fillRect(p.x, p.y, p.w, p.h); }
+            if(cg === 'TRON') {
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = p.color; ctx.lineWidth = p.r; ctx.lineCap='round'; ctx.lineJoin='round';
+                if(p.trail.length > 0) { ctx.beginPath(); ctx.moveTo(p.trail[0].x, p.trail[0].y); p.trail.forEach(tr => ctx.lineTo(tr.x, tr.y)); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+            }
+            ctx.shadowBlur = 0;
+            
+            ctx.fillStyle = '#fff'; ctx.font = '12px Orbitron'; ctx.textAlign = 'center';
+            if(cg !== 'SNIPER' || p.vis > 0 || p.id === myId) {
+                let icon = p.isBot ? '🤖' : getDeviceIcon(p.device);
+                ctx.fillText(`${p.name} ${icon}`, p.x, py - (p.r||p.h||20)*s - 10);
+                if(p.id === myId) { ctx.fillStyle = '#facc15'; ctx.fillText(`▼`, p.x, py - (p.r||p.h||20)*s - 25); }
+            }
+        });
+
+        // Draw Entities
+        entities.forEach(e => {
+            ctx.shadowBlur = 10;
+            if(e.type === 'bullet' || e.type === 'laser') { ctx.fillStyle = colors[e.owner]; ctx.shadowColor = colors[e.owner]; ctx.beginPath(); ctx.arc(e.x, e.y, e.type==='laser'?3:5, 0, Math.PI*2); ctx.fill(); } 
+            else if(cg === 'DODGE') { ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill(); } 
+            else if(cg === 'CATCH') { ctx.fillStyle = '#facc15'; ctx.shadowColor = '#facc15'; ctx.beginPath(); ctx.arc(e.x, e.y, 10, 0, Math.PI*2); ctx.fill(); }
+            else if(e.type === 'zombie') { ctx.fillStyle = '#22c55e'; ctx.shadowColor = '#22c55e'; ctx.beginPath(); ctx.arc(e.x, e.y, 15, 0, Math.PI*2); ctx.fill(); }
+            else if(e.type === 'ball') { ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(e.x, e.y, 10, 0, Math.PI*2); ctx.fill(); }
+            ctx.shadowBlur = 0;
+        });
+
+        // Draw FX
+        particles.forEach(p => { ctx.globalAlpha = Math.max(0, p.alpha); ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, p.size, p.size); }); ctx.globalAlpha = 1.0;
+    }
+
+    function gameLoop(time) {
+        let dt = (time - lastTime) / 1000; lastTime = time; if(dt > 0.1) dt = 0.1;
+        update(dt); draw(); requestAnimationFrame(gameLoop);
+    }
+
+    // --- TEMPLATE BLUEPRINT BUAT 100 GAME ---
+    /* CARA NAMBAHIN GAME KE-13 SAMPE KE-100:
+    1. Copy elemen <div class="game-card"> di HTML, ganti ID dan 'onclick' nya (Misal: 'RACE').
+    2. Cari "12 GAMES SETUP" di JS, tambahin:
+       if(gameName === 'RACE') { p.r = 20; p.x = ... setup awal player ... }
+    3. Cari "MOVEMENT CONTROLS" di JS, tambahin cara player jalan pas main 'RACE'.
+    4. Cari "MINIGAMES RULES" di JS, tambahin logic menang kalahnya (checkWin).
+    5. Cari "Draw Arena" di JS, tambahin gambar map buat 'RACE'.
+    Gitu doang Bang di-ulang-ulang! 🚀
+    */
+</script>
+</body>
+</html>
