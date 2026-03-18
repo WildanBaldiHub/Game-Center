@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wildan's Alchemy ULTRA v4</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none}
+body{background:#080810;color:#dde;font-family:'Courier New',monospace;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+#topbar{display:flex;align-items:center;gap:8px;padding:5px 10px;background:#0d0d1a;border-bottom:1px solid #1e2040;flex-shrink:0;flex-wrap:wrap}
+#logo{font-size:13px;font-weight:bold;color:#00cfff;letter-spacing:2px;margin-right:6px}
+.mbtn{padding:3px 9px;font-size:10px;background:#12122a;border:1px solid #2a2a55;color:#8899bb;cursor:pointer;border-radius:3px;font-family:inherit}
+.mbtn:hover{border-color:#00cfff;color:#00cfff}
+.mbtn.active{background:#1a1a40;border-color:#7c3aed;color:#c4b5fd}
+.mbtn.chaos{border-color:#ef4444!important;color:#ef4444!important}
+.mbtn.chaos.active{background:#2a0808}
+#env-row{display:flex;gap:10px;align-items:center;margin-left:auto}
+.erow{display:flex;align-items:center;gap:4px;font-size:9px;color:#556}
+.erow input{width:55px;accent-color:#00cfff}
+.erow span{color:#f59e0b;min-width:45px;font-size:9px}
+#statrow{display:flex;gap:12px;font-size:10px}
+.sv{color:#00cfff;font-weight:bold}
+#main{display:flex;flex:1;overflow:hidden}
+
+/* LEFT */
+#lpanel{width:175px;background:#0d0d1a;border-right:1px solid #1e2040;display:flex;flex-direction:column;flex-shrink:0}
+#lpanel h3{padding:7px 10px;font-size:9px;color:#445;border-bottom:1px solid #1a1a30;letter-spacing:1px;text-transform:uppercase}
+#csearch{margin:5px;padding:4px 7px;background:#111125;border:1px solid #2a2a50;color:#dde;font-family:inherit;font-size:10px;border-radius:3px;outline:none;width:calc(100% - 10px)}
+#csearch:focus{border-color:#00cfff}
+#clist{flex:1;overflow-y:auto;padding:3px}
+#clist::-webkit-scrollbar{width:3px}
+#clist::-webkit-scrollbar-thumb{background:#2a2a50}
+.ccat{margin-top:5px}
+.ccatname{font-size:8px;color:#445;padding:2px 5px;text-transform:uppercase;letter-spacing:1px}
+.citem{display:flex;align-items:center;gap:5px;padding:3px 5px;cursor:pointer;border-radius:2px;font-size:10px;border:1px solid transparent;margin:1px 0;transition:all 0.12s}
+.citem:hover{background:#141430;border-color:#2a2a55}
+.citem.sel{background:#0a1535;border-color:#00cfff;color:#00cfff}
+.cdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.cname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cprop{font-size:8px}
+
+/* CANVAS */
+#carea{flex:1;position:relative;overflow:hidden}
+canvas{display:block;background:#08080f}
+
+/* RIGHT */
+#rpanel{width:195px;background:#0d0d1a;border-left:1px solid #1e2040;display:flex;flex-direction:column;flex-shrink:0}
+.rtabs{display:flex;border-bottom:1px solid #1a1a30}
+.rtab{flex:1;padding:5px;font-size:9px;cursor:pointer;text-align:center;color:#445;background:#0a0a18;border:none;font-family:inherit;text-transform:uppercase;letter-spacing:1px;transition:all 0.15s}
+.rtab.active{color:#00cfff;background:#0d0d1a;border-bottom:2px solid #00cfff}
+.rbody{flex:1;overflow-y:auto;padding:5px}
+.rbody::-webkit-scrollbar{width:3px}
+.rbody::-webkit-scrollbar-thumb{background:#2a2a50}
+.tsec{margin-bottom:8px}
+.tsec-title{font-size:8px;color:#445;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.tbtn{display:flex;align-items:center;gap:6px;width:100%;padding:5px 7px;background:#111125;border:1px solid #1e1e40;cursor:pointer;border-radius:3px;font-size:10px;color:#8899bb;font-family:inherit;transition:all 0.12s;margin-bottom:2px;text-align:left}
+.tbtn:hover{border-color:#7c3aed;color:#dde}
+.tbtn.active{background:#1a0a35;border-color:#7c3aed;color:#c4b5fd}
+.ticon{font-size:13px;width:18px;text-align:center;line-height:1}
+.tlbl{flex:1}
+.tkbd{font-size:8px;color:#445;background:#08080f;padding:1px 3px;border-radius:2px}
+.tbtn.red{border-color:#3a1010}
+.tbtn.red:hover{border-color:#ef4444;color:#ef4444;background:#1a0808}
+
+/* JOURNAL */
+.jentry{padding:4px 6px;border-left:2px solid #2a2a55;margin-bottom:3px;cursor:pointer;transition:all 0.12s;font-size:9px}
+.jentry:hover{border-left-color:#00cfff;background:#0a1020}
+.jtitle{color:#00cfff;font-weight:bold}
+.jeq{color:#8899bb;margin-top:1px;word-break:break-word}
+.jtime{color:#445;font-size:8px}
+.jempty{color:#445;font-size:10px;text-align:center;padding:20px;line-height:1.8}
+
+/* NOTIFS */
+#notifs{position:absolute;top:8px;right:8px;z-index:200;pointer-events:none;display:flex;flex-direction:column;gap:4px;max-width:260px}
+.notif{padding:5px 10px;border-radius:3px;font-size:10px;border-left:3px solid;animation:nin 0.25s ease;max-width:260px;backdrop-filter:blur(8px)}
+.notif.info{background:rgba(0,207,255,0.12);border-color:#00cfff;color:#00cfff}
+.notif.ok{background:rgba(16,185,129,0.12);border-color:#10b981;color:#10b981}
+.notif.warn{background:rgba(245,158,11,0.12);border-color:#f59e0b;color:#f59e0b}
+.notif.bad{background:rgba(239,68,68,0.12);border-color:#ef4444;color:#ef4444}
+.notif.disc{background:rgba(139,92,246,0.15);border-color:#8b5cf6;color:#c4b5fd}
+@keyframes nin{from{opacity:0;transform:translateX(15px)}to{opacity:1;transform:none}}
+
+/* TOOLTIP */
+#tip{position:absolute;background:rgba(8,8,20,0.97);border:1px solid #2a2a55;border-radius:4px;padding:8px;font-size:9px;min-width:155px;display:none;pointer-events:none;z-index:300}
+#tip h4{color:#00cfff;margin-bottom:5px;font-size:10px}
+.trow{display:flex;justify-content:space-between;gap:8px;margin:1px 0;color:#8899bb}
+.tval{color:#dde}
+.tbar{height:2px;background:#111130;border-radius:1px;margin:2px 0 4px}
+.tbarfill{height:100%;border-radius:1px}
+
+/* CTXMENU */
+#ctx{position:absolute;background:#0e0e20;border:1px solid #2a2a55;border-radius:4px;overflow:hidden;display:none;z-index:400;min-width:155px;box-shadow:0 8px 24px #000a}
+.ci{padding:6px 12px;font-size:10px;cursor:pointer;display:flex;align-items:center;gap:8px;color:#8899bb;transition:background 0.1s}
+.ci:hover{background:#1a1a35;color:#dde}
+.ci.red:hover{background:#1a0808;color:#ef4444}
+.csep{height:1px;background:#1e1e40;margin:2px 0}
+
+/* SELBAR */
+#selbar{position:absolute;bottom:0;left:0;right:0;background:rgba(6,6,16,0.95);border-top:1px solid #1e2040;padding:5px 10px;display:flex;align-items:center;gap:10px;font-size:10px;z-index:100;transform:translateY(100%);transition:transform 0.2s}
+#selbar.show{transform:none}
+#selname{color:#00cfff;font-weight:bold;font-size:11px}
+.sprop{padding:1px 5px;border-radius:2px;font-size:9px;border:1px solid #334}
+.sprop.flammable{border-color:#f97316;color:#f97316}
+.sprop.explosive{border-color:#ef4444;color:#ef4444}
+.sprop.toxic{border-color:#10b981;color:#10b981}
+.sprop.corrosive{border-color:#a855f7;color:#a855f7}
+.sprop.reactive{border-color:#eab308;color:#eab308}
+.sprop.radioactive{border-color:#84cc16;color:#84cc16}
+.sprop.oxidizer{border-color:#38bdf8;color:#38bdf8}
+.sprop.cryogenic{border-color:#818cf8;color:#818cf8}
+.sprop.magnetic{border-color:#64748b;color:#94a3b8}
+
+#kbhelp{position:absolute;bottom:42px;left:8px;background:rgba(8,8,20,0.85);border:1px solid #1e2040;border-radius:3px;padding:7px;font-size:9px;color:#445;line-height:1.9;pointer-events:none}
+kbd{display:inline-block;background:#111125;border:1px solid #2a2a55;border-radius:2px;padding:0 3px;color:#8899bb;font-size:8px;font-family:inherit}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="logo">⚗️ ALCHEMY ULTRA</div>
+  <button class="mbtn active" data-mode="sandbox">SANDBOX</button>
+  <button class="mbtn" data-mode="relax">RELAX</button>
+  <button class="mbtn" data-mode="normal">NORMAL</button>
+  <button class="mbtn" data-mode="expert">EXPERT</button>
+  <button class="mbtn chaos" data-mode="chaos">⚡ CHAOS</button>
+  <div id="env-row">
+    <div class="erow">🌡️<input type="range" id="eT" min="-100" max="1200" value="25" step="5"><span id="eTv">25°C</span></div>
+    <div class="erow">💨<input type="range" id="eP" min="0" max="300" value="100" step="5"><span id="ePv">100 kPa</span></div>
+    <div class="erow">🌍<input type="range" id="eG" min="0" max="25" value="9.8" step="0.5"><span id="eGv">9.8 m/s²</span></div>
+  </div>
+  <div id="statrow">Rxn:<span class="sv" id="srxn">0</span> Disc:<span class="sv" id="sdisc">0</span> Obj:<span class="sv" id="sobj">0</span> FPS:<span class="sv" id="sfps">60</span></div>
+</div>
+
+<div id="main">
+  <div id="lpanel">
+    <h3>⚗️ Chemicals</h3>
+    <input id="csearch" placeholder="Search chemical...">
+    <div id="clist"></div>
+  </div>
+
+  <div id="carea">
+    <canvas id="cv"></canvas>
+    <div id="notifs"></div>
+    <div id="tip"></div>
+    <div id="ctx"></div>
+    <div id="selbar"><span id="selname"></span><span id="selprops" style="display:flex;gap:4px;flex-wrap:wrap"></span><span style="margin-left:auto;font-size:9px;color:#445">Click container to add 50ml · ESC cancel</span></div>
+    <div id="kbhelp"><kbd>B</kbd>Beaker <kbd>F</kbd>Flask <kbd>T</kbd>Tube <kbd>R</kbd>Reactor <kbd>C</kbd>Crucible <kbd>Space</kbd>Pause <kbd>N</kbd>NUKE <kbd>Del</kbd>Remove hover <kbd>ESC</kbd>Deselect</div>
+  </div>
+
+  <div id="rpanel">
+    <div class="rtabs">
+      <button class="rtab active" data-rtab="tools">Tools</button>
+      <button class="rtab" data-rtab="journal">Journal</button>
+      <button class="rtab" data-rtab="auto">Auto</button>
+    </div>
+    <div class="rbody" id="rttools">
+      <div class="tsec">
+        <div class="tsec-title">Containers</div>
+        <button class="tbtn" data-a="beaker"><span class="ticon">🧪</span><span class="tlbl">Beaker 500ml</span><span class="tkbd">B</span></button>
+        <button class="tbtn" data-a="flask"><span class="ticon">⚗️</span><span class="tlbl">Flask 300ml</span><span class="tkbd">F</span></button>
+        <button class="tbtn" data-a="tube"><span class="ticon">🔬</span><span class="tlbl">Test Tube 80ml</span><span class="tkbd">T</span></button>
+        <button class="tbtn" data-a="reactor"><span class="ticon">☢️</span><span class="tlbl">Reactor 1000ml</span><span class="tkbd">R</span></button>
+        <button class="tbtn" data-a="crucible"><span class="ticon">🏺</span><span class="tlbl">Crucible 200ml</span><span class="tkbd">C</span></button>
+      </div>
+      <div class="tsec">
+        <div class="tsec-title">Equipment (double-click to toggle)</div>
+        <button class="tbtn" data-a="heater"><span class="ticon">🔥</span><span class="tlbl">Heater</span></button>
+        <button class="tbtn" data-a="freezer"><span class="ticon">❄️</span><span class="tlbl">Freezer</span></button>
+        <button class="tbtn" data-a="mixer"><span class="ticon">🌀</span><span class="tlbl">Mixer</span></button>
+        <button class="tbtn" data-a="centrifuge"><span class="ticon">🔄</span><span class="tlbl">Centrifuge</span></button>
+        <button class="tbtn" data-a="chamber"><span class="ticon">⚙️</span><span class="tlbl">Pressure Chamber</span></button>
+        <button class="tbtn" data-a="electro"><span class="ticon">⚡</span><span class="tlbl">Electrolyzer</span></button>
+        <button class="tbtn" data-a="uv"><span class="ticon">💡</span><span class="tlbl">UV Laser</span></button>
+        <button class="tbtn" data-a="condenser"><span class="ticon">🌫️</span><span class="tlbl">Condenser</span></button>
+      </div>
+      <div class="tsec">
+        <div class="tsec-title">Lab Actions</div>
+        <button class="tbtn" data-a="ignite-all"><span class="ticon">🔥</span><span class="tlbl">Ignite All</span></button>
+        <button class="tbtn" data-a="freeze-all"><span class="ticon">🧊</span><span class="tlbl">Freeze All</span></button>
+        <button class="tbtn" data-a="shake-all"><span class="ticon">🌀</span><span class="tlbl">Shake All</span></button>
+        <button class="tbtn" data-a="pressurize"><span class="ticon">💨</span><span class="tlbl">Pressurize All</span></button>
+        <button class="tbtn" data-a="nuke" class="red"><span class="ticon">💥</span><span class="tlbl">NUKE LAB</span><span class="tkbd">N</span></button>
+        <button class="tbtn red" data-a="clear"><span class="ticon">🗑️</span><span class="tlbl">Clear All</span></button>
+      </div>
+    </div>
+    <div class="rbody" id="rtjournal" style="display:none">
+      <div id="jlist"><div class="jempty">🔬 No discoveries yet.<br>Mix chemicals to find reactions!</div></div>
+    </div>
+    <div class="rbody" id="rtauto" style="display:none">
+      <div class="tsec">
+        <div class="tsec-title">Automation Devices</div>
+        <button class="tbtn" data-a="pump"><span class="ticon">💧</span><span class="tlbl">Auto Pump</span></button>
+        <button class="tbtn" data-a="dispenser"><span class="ticon">🚿</span><span class="tlbl">Dispenser</span></button>
+        <button class="tbtn" data-a="timer"><span class="ticon">⏱️</span><span class="tlbl">Reaction Timer</span></button>
+        <button class="tbtn" data-a="sensor"><span class="ticon">📡</span><span class="tlbl">Chem Sensor</span></button>
+        <button class="tbtn" data-a="belt"><span class="ticon">➡️</span><span class="tlbl">Conveyor Belt</span></button>
+      </div>
+      <div class="tsec">
+        <div class="tsec-title">Active Automation</div>
+        <div id="autolist"><div style="font-size:9px;color:#445;padding:4px">No automation active.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ============================================================
+//  WILDAN'S ALCHEMY ULTRA v4 — Full Working Build
+// ============================================================
+
+const cv  = document.getElementById('cv');
+const cx2 = cv.getContext('2d');
+const area= document.getElementById('carea');
+
+function resizeCv(){cv.width=area.clientWidth;cv.height=area.clientHeight;}
+resizeCv();
+window.addEventListener('resize',resizeCv);
+
+// ─── CHEMICAL DATABASE ────────────────────────────────────────
+// Props: flammable explosive toxic corrosive reactive radioactive oxidizer cryogenic magnetic
+const DB = {
+acids:[
+  {id:'hcl',   name:'Hydrochloric Acid', f:'HCl',       col:'#88ff44',props:['corrosive','toxic'],       st:'liquid',den:1.18,bp:110, mp:-30},
+  {id:'h2so4', name:'Sulfuric Acid',     f:'H₂SO₄',     col:'#ccff22',props:['corrosive','reactive'],    st:'liquid',den:1.84,bp:337, mp:10},
+  {id:'hno3',  name:'Nitric Acid',       f:'HNO₃',      col:'#ffee00',props:['corrosive','oxidizer'],    st:'liquid',den:1.51,bp:83,  mp:-42},
+  {id:'hf',    name:'Hydrofluoric Acid', f:'HF',        col:'#aaff66',props:['corrosive','toxic'],       st:'liquid',den:1.15,bp:19,  mp:-83},
+  {id:'acetic',name:'Acetic Acid',       f:'CH₃COOH',   col:'#ffffcc',props:['flammable','corrosive'],   st:'liquid',den:1.05,bp:118, mp:16},
+  {id:'h3po4', name:'Phosphoric Acid',   f:'H₃PO₄',     col:'#ddff88',props:['corrosive'],               st:'liquid',den:1.88,bp:158, mp:42},
+  {id:'hclo4', name:'Perchloric Acid',   f:'HClO₄',     col:'#99ff44',props:['corrosive','explosive','oxidizer'],st:'liquid',den:1.77,bp:203,mp:-112},
+  {id:'citric',name:'Citric Acid',       f:'C₆H₈O₇',    col:'#ffff99',props:['reactive'],               st:'solid', den:1.67,bp:310, mp:153},
+],
+bases:[
+  {id:'naoh',  name:'Sodium Hydroxide',  f:'NaOH',      col:'#4488ff',props:['corrosive','reactive'],    st:'solid', den:2.13,bp:1390,mp:318},
+  {id:'koh',   name:'Potassium Hydroxide',f:'KOH',      col:'#5599ff',props:['corrosive','reactive'],    st:'solid', den:2.04,bp:1327,mp:360},
+  {id:'nh3',   name:'Ammonia',           f:'NH₃',       col:'#88aaff',props:['toxic','reactive'],        st:'gas',   den:0.73,bp:-33, mp:-78},
+  {id:'caoh2', name:'Calcium Hydroxide', f:'Ca(OH)₂',   col:'#aabbff',props:['corrosive'],               st:'solid', den:2.21,bp:580, mp:580},
+  {id:'lih',   name:'Lithium Hydride',   f:'LiH',       col:'#77aaff',props:['reactive','explosive','flammable'],st:'solid',den:0.78,bp:850,mp:689},
+],
+metals:[
+  {id:'na',    name:'Sodium',            f:'Na',        col:'#ffcc44',props:['reactive','explosive','flammable'],st:'solid',den:0.97,bp:883,mp:98},
+  {id:'k',     name:'Potassium',         f:'K',         col:'#ffaa33',props:['reactive','explosive','flammable'],st:'solid',den:0.86,bp:774,mp:63},
+  {id:'li',    name:'Lithium',           f:'Li',        col:'#ffee88',props:['reactive','flammable'],     st:'solid', den:0.53,bp:1342,mp:181},
+  {id:'cs',    name:'Cesium',            f:'Cs',        col:'#ffddaa',props:['reactive','explosive'],     st:'solid', den:1.93,bp:671, mp:28},
+  {id:'mg',    name:'Magnesium',         f:'Mg',        col:'#eeeeee',props:['flammable','reactive'],     st:'solid', den:1.74,bp:1091,mp:650},
+  {id:'fe',    name:'Iron',              f:'Fe',        col:'#888899',props:['magnetic','reactive'],      st:'solid', den:7.87,bp:2861,mp:1538},
+  {id:'al',    name:'Aluminum',          f:'Al',        col:'#ccccdd',props:['reactive'],                 st:'solid', den:2.70,bp:2519,mp:660},
+  {id:'zn',    name:'Zinc',              f:'Zn',        col:'#aabbcc',props:['reactive'],                 st:'solid', den:7.13,bp:907, mp:420},
+  {id:'cu',    name:'Copper',            f:'Cu',        col:'#ff8844',props:['magnetic'],                 st:'solid', den:8.96,bp:2562,mp:1085},
+  {id:'hg',    name:'Mercury',           f:'Hg',        col:'#aaaaaa',props:['toxic','reactive'],         st:'liquid',den:13.5,bp:357, mp:-39},
+  {id:'au',    name:'Gold',              f:'Au',        col:'#ffd700',props:[],                           st:'solid', den:19.3,bp:2856,mp:1064},
+],
+oxidizers:[
+  {id:'o2',    name:'Oxygen',            f:'O₂',        col:'#aaffff',props:['oxidizer'],                 st:'gas',   den:1.43,bp:-183,mp:-219},
+  {id:'h2o2',  name:'Hydrogen Peroxide', f:'H₂O₂',      col:'#ccffff',props:['oxidizer','reactive'],      st:'liquid',den:1.44,bp:150, mp:-0.4},
+  {id:'f2',    name:'Fluorine',          f:'F₂',        col:'#aaff44',props:['oxidizer','corrosive','toxic'],st:'gas',den:1.70,bp:-188,mp:-220},
+  {id:'cl2',   name:'Chlorine',          f:'Cl₂',       col:'#88ff66',props:['toxic','oxidizer'],         st:'gas',   den:3.21,bp:-34, mp:-101},
+  {id:'kmno4', name:'Potassium Permanganate',f:'KMnO₄', col:'#cc44ff',props:['oxidizer','reactive'],      st:'solid', den:2.70,bp:240, mp:240},
+  {id:'o3',    name:'Ozone',             f:'O₃',        col:'#88eeff',props:['oxidizer','toxic'],         st:'gas',   den:2.14,bp:-112,mp:-192},
+],
+organics:[
+  {id:'etoh',  name:'Ethanol',           f:'C₂H₅OH',    col:'#ffeeaa',props:['flammable'],               st:'liquid',den:0.789,bp:78, mp:-114},
+  {id:'meoh',  name:'Methanol',          f:'CH₃OH',     col:'#ffeebb',props:['flammable','toxic'],        st:'liquid',den:0.791,bp:65, mp:-98},
+  {id:'acet',  name:'Acetone',           f:'C₃H₆O',     col:'#ffffaa',props:['flammable','reactive'],     st:'liquid',den:0.791,bp:56, mp:-95},
+  {id:'benz',  name:'Benzene',           f:'C₆H₆',      col:'#ffdd88',props:['flammable','toxic'],        st:'liquid',den:0.876,bp:80, mp:5.5},
+  {id:'glyc',  name:'Glycerol',          f:'C₃H₈O₃',    col:'#eeffcc',props:['reactive'],                st:'liquid',den:1.261,bp:290,mp:18},
+  {id:'tnt',   name:'TNT',               f:'C₇H₅N₃O₆',  col:'#ffcc44',props:['explosive','toxic','flammable'],st:'solid',den:1.65,bp:295,mp:80},
+  {id:'ng',    name:'Nitroglycerin',     f:'C₃H₅N₃O₉',  col:'#ff8844',props:['explosive','toxic'],        st:'liquid',den:1.59,bp:218, mp:13},
+  {id:'naphtha',name:'Naphtha',          f:'CₙHₘ',      col:'#ffcc88',props:['flammable','toxic'],        st:'liquid',den:0.73,bp:90,  mp:-100},
+],
+gases:[
+  {id:'h2',    name:'Hydrogen',          f:'H₂',        col:'#eeffff',props:['flammable','explosive'],    st:'gas',   den:0.09,bp:-253,mp:-259},
+  {id:'co2',   name:'Carbon Dioxide',    f:'CO₂',       col:'#cccccc',props:[],                           st:'gas',   den:1.98,bp:-78, mp:-56},
+  {id:'so2',   name:'Sulfur Dioxide',    f:'SO₂',       col:'#ffff88',props:['toxic','reactive'],         st:'gas',   den:2.63,bp:-10, mp:-73},
+  {id:'no2',   name:'Nitrogen Dioxide',  f:'NO₂',       col:'#ff8844',props:['toxic','oxidizer'],         st:'gas',   den:1.88,bp:21,  mp:-11},
+  {id:'h2s',   name:'Hydrogen Sulfide',  f:'H₂S',       col:'#ccff88',props:['toxic','flammable'],        st:'gas',   den:1.36,bp:-60, mp:-82},
+  {id:'co',    name:'Carbon Monoxide',   f:'CO',        col:'#dddddd',props:['toxic','flammable'],        st:'gas',   den:1.14,bp:-191,mp:-205},
+  {id:'cl2o',  name:'Chlorine Monoxide', f:'Cl₂O',      col:'#99ff99',props:['toxic','oxidizer','explosive'],st:'gas',den:3.89,bp:2,  mp:-116},
+],
+special:[
+  {id:'water', name:'Water',             f:'H₂O',       col:'#4488ff',props:[],                           st:'liquid',den:1.0, bp:100, mp:0},
+  {id:'thermite',name:'Thermite',        f:'Al+Fe₂O₃',  col:'#ff4400',props:['explosive','flammable','reactive'],st:'solid',den:3.5,bp:2500,mp:1000},
+  {id:'napalm',name:'Napalm',            f:'CₙHₘ+Al',   col:'#ff6600',props:['flammable','toxic'],        st:'liquid',den:1.0, bp:200, mp:-10},
+  {id:'lox',   name:'Liquid Oxygen',     f:'LOX',       col:'#88ccff',props:['oxidizer','cryogenic'],     st:'liquid',den:1.14,bp:-183,mp:-219},
+  {id:'lh2',   name:'Liquid Hydrogen',   f:'LH₂',       col:'#eeffff',props:['flammable','explosive','cryogenic'],st:'liquid',den:0.07,bp:-253,mp:-259},
+  {id:'uranium',name:'Uranium',          f:'U',         col:'#44ff44',props:['radioactive','toxic'],      st:'solid', den:19.1,bp:4131,mp:1135},
+  {id:'pluton',name:'Plutonium',         f:'Pu',        col:'#88ff44',props:['radioactive','toxic','explosive'],st:'solid',den:19.8,bp:3228,mp:640},
+  {id:'antimatter',name:'Antimatter',    f:'Ā',         col:'#ff00ff',props:['explosive','reactive'],     st:'plasma',den:0.001,bp:9999,mp:9999},
+  {id:'darkm', name:'Dark Matter',       f:'Χ̄',         col:'#220033',props:['reactive'],                 st:'plasma',den:0,   bp:9999,mp:9999},
+  {id:'superacid',name:'Magic Acid',     f:'HSbF₆',     col:'#aaff00',props:['corrosive','explosive','toxic'],st:'liquid',den:3.1,bp:100,mp:-10},
+  {id:'rdx',   name:'RDX',               f:'C₃H₆N₆O₆',  col:'#ffffff',props:['explosive','toxic'],        st:'solid', den:1.82,bp:204, mp:204},
+  {id:'bpowder',name:'Black Powder',     f:'KNO₃+C+S',  col:'#333333',props:['explosive','flammable'],    st:'solid', den:1.7, bp:300, mp:300},
+  {id:'nacl',  name:'Sodium Chloride',   f:'NaCl',      col:'#ffffff',props:[],                           st:'solid', den:2.16,bp:1413,mp:801},
+  {id:'kno3',  name:'Potassium Nitrate', f:'KNO₃',      col:'#ffeecc',props:['oxidizer','explosive'],     st:'solid', den:2.11,bp:400, mp:334},
+],
+};
+
+// Flat list
+const ALLCHEMS = [];
+Object.keys(DB).forEach(cat=>DB[cat].forEach(c=>{c.cat=cat;ALLCHEMS.push(c);}));
+
+// ─── REACTIONS ─────────────────────────────────────────────────
+// Each: {r:[ids], p:[ids], name, eq, heat(kJ), xtype, explosion, fire}
+// xtype: neutral|exo|vigorous|violent|detonation|combustion|radioactive|special
+const RXNS = [
+// Acid+Base
+{r:['hcl','naoh'],    p:['nacl','water'],    name:'Neutralization',    eq:'HCl + NaOH → NaCl + H₂O',           heat:57,   xtype:'neutral'},
+{r:['h2so4','naoh'],  p:['nacl','water'],    name:'Sulfate Neutralization',eq:'H₂SO₄+2NaOH→Na₂SO₄+2H₂O',       heat:114,  xtype:'neutral'},
+{r:['hno3','naoh'],   p:['nacl','water'],    name:'Nitrate Neutralization',eq:'HNO₃+NaOH→NaNO₃+H₂O',           heat:57,   xtype:'neutral'},
+{r:['hcl','koh'],     p:['nacl','water'],    name:'HCl+KOH',           eq:'HCl+KOH→KCl+H₂O',                   heat:57,   xtype:'neutral'},
+{r:['hf','naoh'],     p:['nacl','water'],    name:'HF Neutralization', eq:'HF+NaOH→NaF+H₂O',                   heat:70,   xtype:'neutral'},
+{r:['acetic','naoh'], p:['water'],           name:'Acetate Formation', eq:'CH₃COOH+NaOH→CH₃COONa+H₂O',         heat:57,   xtype:'neutral'},
+// Metal+Water
+{r:['na','water'],    p:['naoh','h2'],       name:'Na + Water 🔥',     eq:'2Na+2H₂O→2NaOH+H₂↑',                heat:100,  xtype:'violent',   explosion:true, fire:true},
+{r:['k','water'],     p:['koh','h2'],        name:'K + Water FIRE 🔥', eq:'2K+2H₂O→2KOH+H₂↑',                  heat:150,  xtype:'violent',   explosion:true, fire:true},
+{r:['cs','water'],    p:['naoh','h2'],       name:'Cs + Water BOOM 💥',eq:'2Cs+2H₂O→2CsOH+H₂↑',               heat:300,  xtype:'detonation',explosion:true, fire:true},
+{r:['li','water'],    p:['naoh','h2'],       name:'Li + Water',        eq:'2Li+2H₂O→2LiOH+H₂↑',               heat:70,   xtype:'vigorous',  explosion:false,fire:true},
+{r:['lih','water'],   p:['naoh','h2'],       name:'LiH Hydrolysis',    eq:'LiH+H₂O→LiOH+H₂↑',                 heat:120,  xtype:'vigorous',  explosion:true, fire:true},
+// Metal+Acid
+{r:['hcl','na'],      p:['nacl','h2'],       name:'Na Dissolution',    eq:'2Na+2HCl→2NaCl+H₂↑',                heat:200,  xtype:'violent',   explosion:true, fire:true},
+{r:['hcl','zn'],      p:['nacl','h2'],       name:'Zn Dissolution',    eq:'Zn+2HCl→ZnCl₂+H₂↑',                heat:25,   xtype:'exo'},
+{r:['hcl','mg'],      p:['nacl','h2'],       name:'Mg Dissolution',    eq:'Mg+2HCl→MgCl₂+H₂↑',                heat:80,   xtype:'vigorous',  fire:true},
+{r:['hcl','fe'],      p:['nacl','h2'],       name:'Fe Dissolution',    eq:'Fe+2HCl→FeCl₂+H₂↑',                heat:30,   xtype:'exo'},
+{r:['h2so4','zn'],    p:['h2'],             name:'Zn+H₂SO₄',          eq:'Zn+H₂SO₄→ZnSO₄+H₂↑',               heat:35,   xtype:'exo'},
+// Combustion
+{r:['h2','o2'],       p:['water'],           name:'H₂ Combustion',     eq:'2H₂+O₂→2H₂O',                       heat:286,  xtype:'combustion',explosion:true, fire:true},
+{r:['etoh','o2'],     p:['co2','water'],     name:'Ethanol Burn',      eq:'C₂H₅OH+3O₂→2CO₂+3H₂O',             heat:1367, xtype:'combustion',fire:true},
+{r:['meoh','o2'],     p:['co2','water'],     name:'Methanol Burn',     eq:'2CH₃OH+3O₂→2CO₂+4H₂O',             heat:726,  xtype:'combustion',fire:true},
+{r:['mg','o2'],       p:['nacl'],           name:'Mg Combustion ✨',   eq:'2Mg+O₂→2MgO',                       heat:601,  xtype:'combustion',fire:true},
+{r:['co','o2'],       p:['co2'],            name:'CO Oxidation',       eq:'2CO+O₂→2CO₂',                        heat:566,  xtype:'combustion',fire:true},
+{r:['h2s','o2'],      p:['water','so2'],    name:'H₂S Burn',          eq:'2H₂S+3O₂→2SO₂+2H₂O',               heat:300,  xtype:'combustion',fire:true},
+{r:['napalm','o2'],   p:['co2','water'],    name:'Napalm Burn 🔥🔥',  eq:'Napalm+O₂→CO₂+H₂O',                  heat:5000, xtype:'combustion',fire:true},
+{r:['naphtha','o2'],  p:['co2','water'],    name:'Naphtha Burn',      eq:'CₙHₘ+O₂→CO₂+H₂O',                   heat:900,  xtype:'combustion',fire:true},
+// Explosions
+{r:['tnt','o2'],      p:['co2','h2'],       name:'TNT Detonation 💥', eq:'2C₇H₅N₃O₆+3.5O₂→7N₂+7H₂O+14CO₂', heat:15000,xtype:'detonation',explosion:true,fire:true},
+{r:['ng','ng'],       p:['co2','h2','o2'],  name:'Nitro BOOM 💥💥',   eq:'4C₃H₅N₃O₉→12CO₂+10H₂O+6N₂+O₂',   heat:20000,xtype:'detonation',explosion:true,fire:true},
+{r:['rdx','thermite'],p:['co2','h2'],       name:'Shaped Charge 💥',  eq:'RDX+Thermite→KABOOM',                heat:50000,xtype:'detonation',explosion:true,fire:true},
+{r:['bpowder','kno3'],p:['co2','h2'],       name:'Deflagration 🔥',   eq:'KNO₃+C+S→K₂S+CO₂+N₂',              heat:3000, xtype:'detonation',explosion:true,fire:true},
+{r:['hclo4','etoh'],  p:['co2','water'],    name:'Perchlorate Exp 💥',eq:'HClO₄+C₂H₅OH→💥',                  heat:10000,xtype:'detonation',explosion:true,fire:true},
+{r:['acet','h2o2'],   p:['h2o2'],           name:'Acetone Peroxide',  eq:'(CH₃CO)₂O₂→explosive',              heat:200,  xtype:'vigorous',  explosion:true},
+// Thermite
+{r:['thermite','o2'], p:['fe'],             name:'Thermite Reaction 🌡️',eq:'2Al+Fe₂O₃→Al₂O₃+2Fe',            heat:3000, xtype:'violent',   fire:true,explosion:false},
+// Special
+{r:['lox','lh2'],     p:['water'],          name:'Rocket Fuel 🚀',    eq:'2H₂+O₂→2H₂O (cryo)',               heat:240,  xtype:'combustion',explosion:true,fire:true},
+{r:['antimatter','water'],p:['h2','o2'],    name:'Annihilation ☢️',   eq:'matter+antimatter→γ+heat',           heat:999999,xtype:'detonation',explosion:true,fire:true},
+{r:['antimatter','darkm'],p:['water'],      name:'Dark Annihilation 🌌',eq:'Ā+Χ̄→unknown',                    heat:999999,xtype:'detonation',explosion:true,fire:true},
+{r:['pluton','hno3'], p:['h2o2'],           name:'Pu Dissolution ☢️', eq:'Pu+HNO₃→Pu(NO₃)₄',                 heat:150,  xtype:'radioactive',explosion:true},
+{r:['uranium','hno3'],p:['h2o2'],           name:'U Dissolution ☢️',  eq:'U+HNO₃→UO₂(NO₃)₂',                 heat:100,  xtype:'radioactive'},
+{r:['superacid','water'],p:['hcl'],         name:'Magic Acid Hydrolysis',eq:'HSbF₆+H₂O→…',                   heat:200,  xtype:'vigorous',  explosion:true},
+{r:['f2','water'],    p:['hf','o2'],        name:'F₂ Hydrolysis 💥',  eq:'2F₂+2H₂O→4HF+O₂',                  heat:500,  xtype:'violent',   explosion:true},
+{r:['cl2','nh3'],     p:['h2s'],            name:'Chloramine (toxic)', eq:'3Cl₂+8NH₃→N₂+6NH₄Cl',             heat:50,   xtype:'exo'},
+{r:['kmno4','h2so4'], p:['h2o2'],           name:'Permanganate Rxn',  eq:'2KMnO₄+H₂SO₄→Mn₂O₇+…',            heat:40,   xtype:'exo'},
+{r:['glyc','hno3'],   p:['ng','water'],     name:'Nitration (Nitro Synthesis)',eq:'C₃H₈O₃+HNO₃→C₃H₅N₃O₉+H₂O',heat:50, xtype:'vigorous'},
+{r:['benz','hno3'],   p:['no2'],            name:'Nitrobenzene Synth',eq:'C₆H₆+HNO₃→C₆H₅NO₂+H₂O',           heat:30,   xtype:'exo'},
+{r:['etoh','acetic'], p:['water'],          name:'Esterification',    eq:'C₂H₅OH+CH₃COOH→ester+H₂O',         heat:5,    xtype:'neutral'},
+// Electrolysis (handled via equipment)
+{r:['water','water'], p:['h2','o2'],        name:'Electrolysis',      eq:'2H₂O→2H₂+O₂',                       heat:-286, xtype:'special',   needsElectro:true},
+];
+
+// ─── GAME STATE ────────────────────────────────────────────────
+const G={
+  mode:'sandbox', paused:false,
+  selChem:null, selTool:null,
+  dragging:null, dragOX:0, dragOY:0,
+  hovered:null,
+  pouring:null,   // {fromId,toId,awaitTarget,timer}
+  objects:[],     // containers + equipment
+  particles:[],
+  explosions:[],
+  fires:[],
+  discoveries:[],
+  discMap:{},
+  automations:[],
+  stats:{rxn:0,disc:0,fps:60,fpsLast:Date.now(),frames:0},
+  env:{temp:25,pressure:100,gravity:9.8},
+  nextId:1,
+  shake:{t:0,mag:0},
+};
+
+const modeMultiplier={
+  sandbox:{heat:1,  chaos:0.1,  rxrate:1,  maxexp:'mega'},
+  relax:  {heat:0.1,chaos:0,    rxrate:0.5,maxexp:'none'},
+  normal: {heat:1,  chaos:0.2,  rxrate:1,  maxexp:'large'},
+  expert: {heat:1.2,chaos:0.3,  rxrate:1.2,maxexp:'large'},
+  chaos:  {heat:3,  chaos:1,    rxrate:2,  maxexp:'mega'},
+};
+function mm(){return modeMultiplier[G.mode]||modeMultiplier.sandbox;}
+
+// ─── CONTAINER / EQUIPMENT DEFS ────────────────────────────────
+const CTYPES={
+  beaker:  {name:'Beaker',   cap:500, w:58, h:68, shape:'beaker'},
+  flask:   {name:'Flask',    cap:300, w:54, h:78, shape:'flask'},
+  tube:    {name:'Test Tube',cap:80,  w:24, h:88, shape:'tube'},
+  reactor: {name:'Reactor',  cap:1000,w:78, h:78, shape:'reactor'},
+  crucible:{name:'Crucible', cap:200, w:48, h:44, shape:'crucible'},
+};
+const ETYPES={
+  heater:   {name:'Heater',   icon:'🔥',w:68,h:28,eff:'heat',   val:+180},
+  freezer:  {name:'Freezer',  icon:'❄️',w:68,h:28,eff:'cool',   val:-120},
+  mixer:    {name:'Mixer',    icon:'🌀',w:48,h:48,eff:'mix',    val:0},
+  centrifuge:{name:'Centrifuge',icon:'🔄',w:68,h:55,eff:'separate',val:0},
+  chamber:  {name:'Pressure Chamber',icon:'⚙️',w:78,h:78,eff:'pressure',val:+150},
+  electro:  {name:'Electrolyzer',icon:'⚡',w:68,h:55,eff:'electro',val:0},
+  uv:       {name:'UV Laser', icon:'💡',w:38,h:38,eff:'uv',    val:0},
+  condenser:{name:'Condenser',icon:'🌫️',w:58,h:78,eff:'condense',val:0},
+};
+
+let UID=1;
+function uid(){return UID++;}
+
+function spawnContainer(type,x,y){
+  const d=CTYPES[type]; if(!d)return null;
+  const o={
+    id:uid(),kind:'container',type,
+    x:x-d.w/2, y:y-d.h/2,
+    w:d.w,h:d.h,cap:d.cap,shape:d.shape,
+    layers:[],                // [{chem, vol, temp, state}]
+    temp:G.env.temp, pressure:G.env.pressure,
+    sealed:false, shaking:0, burnTimer:0,
+  };
+  G.objects.push(o);
+  statObj();
+  return o;
+}
+
+function spawnEquipment(type,x,y){
+  const d=ETYPES[type]; if(!d)return null;
+  const o={
+    id:uid(),kind:'equipment',type,
+    x:x-d.w/2, y:y-d.h/2,
+    w:d.w,h:d.h,
+    active:false, def:d,
+  };
+  G.objects.push(o);
+  statObj();
+  addAutoEntry(o);
+  return o;
+}
+
+function totalVol(c){return c.layers.reduce((s,l)=>s+l.vol,0);}
+
+function addChem(c,cid,vol){
+  if(!c||c.kind==='equipment')return;
+  const ch=ALLCHEMS.find(x=>x.id===cid); if(!ch)return;
+  const room=c.cap-totalVol(c);
+  vol=Math.min(vol,room); if(vol<=0){notify('Container full!','warn');return;}
+  const ex=c.layers.find(l=>l.ch.id===cid);
+  if(ex)ex.vol+=vol;
+  else c.layers.push({ch,vol,temp:c.temp,state:ch.st});
+  // Heat from dissolving
+  if(ch.props.includes('reactive'))c.temp+=1;
+  checkRxn(c);
+}
+
+function addLayer(c,cid,vol){
+  if(!c||c.kind==='equipment')return;
+  const ch=ALLCHEMS.find(x=>x.id===cid); if(!ch)return;
+  const room=c.cap-totalVol(c);
+  vol=Math.min(vol,room); if(vol<=0)return;
+  const ex=c.layers.find(l=>l.ch.id===cid);
+  if(ex)ex.vol+=vol;
+  else c.layers.push({ch,vol,temp:c.temp,state:ch.st});
+}
+
+// ─── REACTION ENGINE ───────────────────────────────────────────
+function checkRxn(c){
+  if(c.layers.length<1)return;
+  const ids=c.layers.map(l=>l.ch.id);
+  let matched=false;
+  for(const rxn of RXNS){
+    if(rxn.needsElectro)continue; // handled separately
+    const ok=rxn.r.every(rid=>ids.includes(rid));
+    if(!ok)continue;
+    // Mode gate
+    if(G.mode==='relax'&&(rxn.xtype==='detonation'||rxn.xtype==='violent'))continue;
+    applyRxn(c,rxn);
+    matched=true;
+    break;
+  }
+  if(!matched&&c.layers.length>=2){
+    dynamicRxn(c);
+  }
+  // Mutation chance
+  if(Math.random()<0.015*mm().chaos+0.005)tryMutation(c);
+  // Chain reaction: if temp got very high, check again
+  if(c.temp>500&&Math.random()<0.3)setTimeout(()=>checkRxn(c),200);
+}
+
+function applyRxn(c,rxn){
+  // Consume reactants
+  for(const rid of rxn.r){
+    const l=c.layers.find(x=>x.ch.id===rid);
+    if(l){l.vol=Math.max(0,l.vol-15*mm().rxrate);}
+  }
+  c.layers=c.layers.filter(l=>l.vol>0.5);
+  // Add products
+  for(const pid of rxn.p){
+    addLayer(c,pid,20*mm().rxrate);
+  }
+  // Temperature
+  const dT=rxn.heat*0.04*mm().heat;
+  c.temp+=dT;
+  // Effects
+  const canExplode=mm().maxexp!=='none';
+  if(rxn.explosion&&canExplode){
+    const sz=rxn.heat>10000?'mega':rxn.heat>1000?'large':'small';
+    const finalSz=(mm().maxexp==='large'&&sz==='mega')?'large':sz;
+    triggerExplosion(c.x+c.w/2,c.y+c.h/2,finalSz);
+  }
+  if(rxn.fire&&G.mode!=='relax'){
+    spawnFire(c.x+c.w/2,c.y,20+Math.min(80,rxn.heat*0.01));
+  }
+  G.stats.rxn++;
+  document.getElementById('srxn').textContent=G.stats.rxn;
+  discoverRxn(rxn);
+}
+
+function dynamicRxn(c){
+  const a=c.layers[0],b=c.layers[1];
+  const heat=Math.abs((a.ch.den||1)-(b.ch.den||1))*10+5;
+  const newId=`${a.ch.id}_${b.ch.id}`;
+  let newCh=ALLCHEMS.find(x=>x.id===newId);
+  if(!newCh){
+    newCh={
+      id:newId,
+      name:`${a.ch.name.split(' ')[0]}-${b.ch.name.split(' ')[0]} Cmpd`,
+      f:`[${a.ch.f}·${b.ch.f}]`,
+      col:blendCol(a.ch.col,b.ch.col,0.5),
+      props:[...new Set([...a.ch.props,...b.ch.props])],
+      st:a.ch.st,den:(a.ch.den+b.ch.den)/2,
+      bp:(a.ch.bp+b.ch.bp)/2,mp:(a.ch.mp+b.ch.mp)/2,
+      cat:'compounds',dynamic:true,
+    };
+    ALLCHEMS.push(newCh);
+    renderChemList();
+  }
+  a.vol=Math.max(0,a.vol-8); b.vol=Math.max(0,b.vol-8);
+  c.layers=c.layers.filter(l=>l.vol>0.5);
+  addLayer(c,newId,12);
+  c.temp+=heat;
+  G.stats.rxn++;
+  document.getElementById('srxn').textContent=G.stats.rxn;
+  const dynRxn={name:`${a.ch.name}+${b.ch.name}`,eq:`${a.ch.f}+${b.ch.f}→${newCh.f}`,xtype:'dynamic'};
+  discoverRxn(dynRxn);
+  if(G.mode==='chaos'&&Math.random()<0.25)triggerExplosion(c.x+c.w/2,c.y+c.h/2,'small');
+}
+
+function tryMutation(c){
+  if(!c.layers.length)return;
+  const l=c.layers[Math.floor(Math.random()*c.layers.length)];
+  const mutables=['flammable','explosive','toxic','reactive','radioactive'];
+  const p=mutables[Math.floor(Math.random()*mutables.length)];
+  if(!l.ch.props.includes(p)){
+    // clone chem to avoid mutating original
+    l.ch={...l.ch,props:[...l.ch.props,p],name:'⚠ '+l.ch.name,col:blendCol(l.ch.col,'#ff00ff',0.25)};
+    notify(`🧬 MUTATION: ${l.ch.name} → ${p}`,'warn');
+    discoverRxn({name:`Mutation: ${p}`,eq:`${l.ch.f} mutates → ${p}`,xtype:'mutation'});
+  }
+}
+
+function discoverRxn(rxn){
+  const k=rxn.name;
+  if(G.discMap[k])return;
+  G.discMap[k]=true;
+  G.discoveries.push({rxn,time:new Date().toLocaleTimeString()});
+  G.stats.disc++;
+  document.getElementById('sdisc').textContent=G.stats.disc;
+  renderJournal();
+  notify(`🔬 Discovered: ${rxn.name}`,'disc');
+}
+
+// ─── EXPLOSIONS ────────────────────────────────────────────────
+function triggerExplosion(x,y,size='small'){
+  const sizes={small:{r:80,n:30,d:0.9},large:{r:200,n:70,d:1.4},mega:{r:450,n:160,d:2.2}};
+  const s=sizes[size]||sizes.small;
+  G.explosions.push({x,y,r:0,maxR:s.r,t:0,dur:s.d});
+  for(let i=0;i<s.n;i++){
+    const ang=Math.random()*Math.PI*2;
+    const spd=40+Math.random()*s.r*0.9;
+    G.particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-80,
+      life:0.6+Math.random()*0.8,maxLife:1.4,
+      r:2+Math.random()*5,col:`hsl(${Math.random()*50},100%,${50+Math.random()*30}%)`,type:'exp'});
+  }
+  G.shake.t=0.5; G.shake.mag=size==='mega'?18:size==='large'?8:3;
+  notify(`💥 EXPLOSION (${size})!`,size==='mega'?'bad':'warn');
+  // Damage nearby containers
+  G.objects.forEach(o=>{
+    if(o.kind==='equipment')return;
+    const dx=o.x+o.w/2-x,dy=o.y+o.h/2-y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<s.r){
+      o.temp+=(1-dist/s.r)*600;
+      o.shaking=0.8;
+      if(size==='mega'&&dist<s.r*0.35&&G.mode!=='sandbox'){
+        G.objects=G.objects.filter(oo=>oo.id!==o.id);
+        statObj();
+      }
+    }
+  });
+}
+
+function spawnFire(x,y,sz){
+  if(G.mode==='relax')return;
+  G.fires.push({x,y,sz,t:0});
+  for(let i=0;i<15;i++){
+    G.particles.push({
+      x:x+(Math.random()-0.5)*sz,y,
+      vx:(Math.random()-0.5)*25,vy:-40-Math.random()*80,
+      life:0.4+Math.random()*0.6,maxLife:1,
+      r:2+Math.random()*6,col:`hsl(${15+Math.random()*30},100%,${45+Math.random()*25}%)`,type:'fire'
+    });
+  }
+}
+
+// ─── POURING ───────────────────────────────────────────────────
+function startPour(fromId,toId){
+  G.pouring={fromId,toId,timer:0,awaitTarget:false};
+}
+
+function updatePouring(dt){
+  const p=G.pouring; if(!p||p.awaitTarget)return;
+  const from=G.objects.find(o=>o.id===p.fromId);
+  const to=G.objects.find(o=>o.id===p.toId);
+  if(!from||!to||from.layers.length===0){G.pouring=null;return;}
+  if(totalVol(to)>=to.cap){G.pouring=null;notify('Target full','warn');return;}
+  p.timer+=dt;
+  if(p.timer<0.04)return;
+  p.timer=0;
+  const l=from.layers[0]; if(!l){G.pouring=null;return;}
+  const amt=Math.min(2,l.vol);
+  l.vol-=amt;
+  if(l.vol<0.5)from.layers=from.layers.filter(x=>x!==l);
+  addLayer(to,l.ch.id,amt);
+  checkRxn(to);
+  // Drip particles
+  const fx=from.x+from.w/2,fy=from.y+from.h;
+  for(let i=0;i<2;i++){
+    G.particles.push({
+      x:fx+(Math.random()-0.5)*8,y:fy,
+      vx:(Math.random()-0.5)*15,vy:30+Math.random()*60,
+      life:0.4,maxLife:0.4,r:2+Math.random()*2,
+      col:l.ch.col||'#4488ff',type:'drip'
+    });
+  }
+}
+
+// ─── EQUIPMENT EFFECTS ─────────────────────────────────────────
+function applyEquipment(eq,dt){
+  if(!eq.active)return;
+  const nearby=G.objects.filter(o=>{
+    if(o.kind==='equipment'||o.id===eq.id)return false;
+    const dx=o.x+o.w/2-(eq.x+eq.w/2),dy=o.y+o.h/2-(eq.y+eq.h/2);
+    return Math.sqrt(dx*dx+dy*dy)<110;
+  });
+  nearby.forEach(c=>{
+    const d=eq.def;
+    if(d.eff==='heat')   c.temp=Math.min(c.temp+d.val*dt,2500);
+    if(d.eff==='cool')   c.temp=Math.max(c.temp+d.val*dt,-250);
+    if(d.eff==='mix')    { if(Math.random()<0.3)checkRxn(c); }
+    if(d.eff==='pressure'){c.pressure=Math.min(c.pressure+d.val*dt,500);}
+    if(d.eff==='electro'){
+      if(c.layers.find(l=>l.ch.id==='water')){
+        addLayer(c,'h2',3*dt); addLayer(c,'o2',1.5*dt);
+        G.stats.rxn++;
+        document.getElementById('srxn').textContent=G.stats.rxn;
+      }
+    }
+    if(d.eff==='separate'){
+      // Centrifuge: sort layers by density
+      c.layers.sort((a,b)=>(b.ch.den||1)-(a.ch.den||1));
+    }
+    if(d.eff==='condense'){
+      // Convert gas layers to liquid if below bp
+      c.layers.forEach(l=>{
+        if(l.state==='gas'&&c.temp<l.ch.bp)l.state='liquid';
+      });
+    }
+  });
+}
+
+// ─── AUTOMATION ────────────────────────────────────────────────
+let autoTick=0;
+function updateAutomation(dt){
+  autoTick+=dt;
+  if(autoTick<2.5)return;
+  autoTick=0;
+  G.automations.forEach(au=>{
+    if(!au.active)return;
+    const containers=G.objects.filter(o=>o.kind==='container');
+    if(au.atype==='pump'&&containers.length>=2){
+      const from=containers.find(c=>totalVol(c)>30);
+      const to=containers.find(c=>c!==from&&totalVol(c)<c.cap*0.8);
+      if(from&&to)startPour(from.id,to.id);
+    }
+    if(au.atype==='dispenser'&&au.chemId){
+      const tgt=containers.find(c=>totalVol(c)<c.cap*0.6);
+      if(tgt)addChem(tgt,au.chemId,15);
+    }
+    if(au.atype==='timer'){
+      containers.forEach(c=>{if(c.layers.length>=2)checkRxn(c);});
+    }
+  });
+}
+
+// ─── UPDATE ─────────────────────────────────────────────────────
+let lastT=performance.now();
+function update(now){
+  const dt=Math.min((now-lastT)/1000,0.05);
+  lastT=now;
+  if(G.paused)return;
+
+  // Particles
+  for(let i=G.particles.length-1;i>=0;i--){
+    const p=G.particles[i];
+    p.x+=p.vx*dt; p.y+=p.vy*dt;
+    p.vy+=G.env.gravity*8*dt;
+    p.life-=dt;
+    if(p.life<=0)G.particles.splice(i,1);
+  }
+  // Explosions
+  for(let i=G.explosions.length-1;i>=0;i--){
+    const e=G.explosions[i];
+    e.t+=dt; e.r=e.maxR*Math.min(1,e.t/0.15);
+    if(e.t>=e.dur)G.explosions.splice(i,1);
+  }
+  // Fires
+  for(let i=G.fires.length-1;i>=0;i--){
+    G.fires[i].t+=dt*0.6;
+    if(Math.random()<0.08){
+      const f=G.fires[i];
+      G.particles.push({
+        x:f.x+(Math.random()-0.5)*f.sz,y:f.y,
+        vx:(Math.random()-0.5)*20,vy:-50-Math.random()*80,
+        life:0.3+Math.random()*0.5,maxLife:0.8,
+        r:2+Math.random()*5,col:`hsl(${20+Math.random()*25},100%,55%)`,type:'fire'
+      });
+    }
+    if(G.fires[i].t>=1)G.fires.splice(i,1);
+  }
+  // Shake
+  if(G.shake.t>0)G.shake.t-=dt;
+
+  // Containers
+  G.objects.forEach(o=>{
+    if(o.kind==='equipment'){applyEquipment(o,dt);return;}
+    // Temp drift toward ambient
+    o.temp+=(G.env.temp-o.temp)*0.008*dt*60;
+    // State changes
+    o.layers.forEach(l=>{
+      if(o.temp>=l.ch.bp+5)    l.state='gas';
+      else if(o.temp<=l.ch.mp-5)l.state='solid';
+      else if(o.temp>l.ch.bp*1.8)l.state='plasma';
+      else if(l.state==='gas'&&o.temp<l.ch.bp)l.state='liquid';
+      else if(l.state==='solid'&&o.temp>l.ch.mp)l.state='liquid';
+    });
+    // Flammable + hot → burn off
+    o.layers.forEach(l=>{
+      if(l.ch.props.includes('flammable')&&o.temp>l.ch.bp+20){
+        spawnFire(o.x+o.w/2,o.y,15+l.vol*0.2);
+        l.vol=Math.max(0,l.vol-5*dt);
+      }
+    });
+    o.layers=o.layers.filter(l=>l.vol>0.5);
+    // Shaking decay
+    if(o.shaking>0)o.shaking=Math.max(0,o.shaking-dt);
+    // Chaos random events
+    if(G.mode==='chaos'&&Math.random()<0.0006){
+      o.temp+=Math.random()*200;
+      checkRxn(o);
+    }
+    // Boiling bubbles
+    o.layers.forEach(l=>{
+      if(o.temp>l.ch.bp*0.85&&Math.random()<0.08){
+        G.particles.push({
+          x:o.x+4+Math.random()*(o.w-8),y:o.y+o.h-5,
+          vx:(Math.random()-0.5)*8,vy:-20-Math.random()*25,
+          life:0.4,maxLife:0.4,r:1+Math.random()*2,
+          col:l.ch.col||'#ffffff',type:'bubble'
+        });
+      }
+    });
+  });
+
+  updatePouring(dt);
+  updateAutomation(dt);
+
+  // Chaos mode random container spawns
+  if(G.mode==='chaos'&&Math.random()<0.003){
+    const x=80+Math.random()*(cv.width-200);
+    const y=80+Math.random()*(cv.height-150);
+    const types=['beaker','flask','tube'];
+    const c=spawnContainer(types[Math.floor(Math.random()*3)],x,y);
+    if(c){
+      const ch=ALLCHEMS[Math.floor(Math.random()*ALLCHEMS.length)];
+      addChem(c,ch.id,30+Math.random()*80);
+    }
+  }
+
+  // FPS
+  G.stats.frames++;
+  const now2=performance.now();
+  if(now2-G.stats.fpsLast>600){
+    G.stats.fps=Math.round(G.stats.frames/((now2-G.stats.fpsLast)/1000));
+    G.stats.frames=0; G.stats.fpsLast=now2;
+    document.getElementById('sfps').textContent=G.stats.fps;
+  }
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────
+function render(){
+  cx2.clearRect(0,0,cv.width,cv.height);
+  cx2.save();
+  if(G.shake.t>0){
+    const m=G.shake.mag*(G.shake.t/0.5);
+    cx2.translate((Math.random()-0.5)*m,(Math.random()-0.5)*m);
+  }
+  drawGrid();
+  // Draw pour line
+  if(G.pouring&&!G.pouring.awaitTarget){
+    const fr=G.objects.find(o=>o.id===G.pouring.fromId);
+    const to=G.objects.find(o=>o.id===G.pouring.toId);
+    if(fr&&to)drawPourLine(fr,to);
+  }
+  G.objects.forEach(o=>{
+    if(o.kind==='equipment')drawEquipment(o);
+    else drawContainer(o);
+  });
+  drawExplosions();
+  drawFires();
+  drawParticles();
+  cx2.restore();
+}
+
+function drawGrid(){
+  cx2.strokeStyle='rgba(25,25,55,0.9)';
+  cx2.lineWidth=0.5;
+  for(let x=0;x<cv.width;x+=40){cx2.beginPath();cx2.moveTo(x,0);cx2.lineTo(x,cv.height);cx2.stroke();}
+  for(let y=0;y<cv.height;y+=40){cx2.beginPath();cx2.moveTo(0,y);cx2.lineTo(cv.width,y);cx2.stroke();}
+}
+
+function drawContainer(c){
+  const isHov=G.hovered&&G.hovered.id===c.id;
+  const isDrag=G.dragging&&G.dragging.id===c.id;
+  cx2.save();
+  if(isDrag)cx2.globalAlpha=0.75;
+
+  // Heat/cold glow
+  if(c.temp>150){
+    const g=cx2.createRadialGradient(c.x+c.w/2,c.y+c.h/2,0,c.x+c.w/2,c.y+c.h/2,c.w*0.9);
+    const intensity=Math.min(0.5,(c.temp-150)/800);
+    g.addColorStop(0,`rgba(255,120,0,${intensity})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    cx2.fillStyle=g;
+    cx2.beginPath();cx2.ellipse(c.x+c.w/2,c.y+c.h*0.6,c.w*0.9,c.h*0.7,0,0,Math.PI*2);cx2.fill();
+  }
+  if(c.temp<0){
+    const g=cx2.createRadialGradient(c.x+c.w/2,c.y+c.h/2,0,c.x+c.w/2,c.y+c.h/2,c.w*0.8);
+    g.addColorStop(0,`rgba(80,140,255,${Math.min(0.4,Math.abs(c.temp)/300)})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    cx2.fillStyle=g;
+    cx2.beginPath();cx2.ellipse(c.x+c.w/2,c.y+c.h/2,c.w*0.8,c.h*0.7,0,0,Math.PI*2);cx2.fill();
+  }
+
+  // Container glass
+  cx2.fillStyle='rgba(10,12,28,0.65)';
+  cx2.strokeStyle=c.shaking>0?'#ff3333':isHov?'rgba(0,207,255,0.9)':'rgba(100,160,255,0.5)';
+  cx2.lineWidth=isHov?2:1.5;
+  drawShape(c);
+
+  // Contents
+  drawContainerContents(c);
+
+  // Hover glow border (redraw on top)
+  if(isHov){
+    cx2.strokeStyle='rgba(0,207,255,0.85)';
+    cx2.lineWidth=2;
+    cx2.setLineDash([5,4]);
+    drawShape(c,true);
+    cx2.setLineDash([]);
+  }
+
+  // Label below
+  const tv=totalVol(c);
+  const topL=c.layers.length>0?c.layers[0]:null;
+  const lbl=topL?topL.ch.f:'Empty';
+  cx2.font='bold 9px Courier New';
+  cx2.textAlign='center';
+  cx2.fillStyle='rgba(0,0,0,0.7)';
+  cx2.fillRect(c.x,c.y+c.h+1,c.w,28);
+  cx2.fillStyle='#99bbcc';
+  cx2.fillText(lbl,c.x+c.w/2,c.y+c.h+10);
+  cx2.font='8px Courier New';
+  cx2.fillStyle='#556677';
+  cx2.fillText(`${Math.round(tv)}/${c.cap}ml`,c.x+c.w/2,c.y+c.h+19);
+  const tc=c.temp>100?'#f97316':c.temp<0?'#60a5fa':'#34d399';
+  cx2.fillStyle=tc;
+  cx2.fillText(`${c.temp>0?'+':''}${Math.round(c.temp)}°C`,c.x+c.w/2,c.y+c.h+27);
+
+  cx2.restore();
+}
+
+function drawShape(c,noFill){
+  cx2.beginPath();
+  if(c.shape==='beaker'){
+    cx2.moveTo(c.x+4,c.y); cx2.lineTo(c.x+c.w-4,c.y);
+    cx2.lineTo(c.x+c.w,c.y+c.h); cx2.lineTo(c.x,c.y+c.h); cx2.closePath();
+  } else if(c.shape==='flask'){
+    const mx=c.x+c.w/2,neckW=7;
+    cx2.moveTo(mx-neckW,c.y); cx2.lineTo(mx+neckW,c.y);
+    cx2.lineTo(mx+neckW,c.y+c.h*0.28);
+    cx2.bezierCurveTo(mx+c.w*0.65,c.y+c.h*0.38,c.x+c.w,c.y+c.h*0.58,c.x+c.w,c.y+c.h);
+    cx2.lineTo(c.x,c.y+c.h);
+    cx2.bezierCurveTo(c.x,c.y+c.h*0.58,mx-c.w*0.65,c.y+c.h*0.38,mx-neckW,c.y+c.h*0.28);
+    cx2.closePath();
+  } else if(c.shape==='tube'){
+    cx2.roundRect(c.x,c.y,c.w,c.h,c.w/2);
+  } else if(c.shape==='reactor'){
+    cx2.roundRect(c.x,c.y,c.w,c.h,7);
+  } else if(c.shape==='crucible'){
+    cx2.moveTo(c.x,c.y); cx2.lineTo(c.x+c.w,c.y);
+    cx2.lineTo(c.x+c.w*0.82,c.y+c.h); cx2.lineTo(c.x+c.w*0.18,c.y+c.h); cx2.closePath();
+  }
+  if(!noFill)cx2.fill();
+  cx2.stroke();
+}
+
+function drawContainerContents(c){
+  if(!c.layers.length)return;
+  const tv=totalVol(c);
+  const fillRatio=Math.min(1,tv/c.cap);
+
+  // Clip to shape
+  cx2.save();
+  cx2.beginPath();
+  if(c.shape==='flask'){
+    const mx=c.x+c.w/2,neckW=7;
+    cx2.moveTo(mx-neckW,c.y); cx2.lineTo(mx+neckW,c.y);
+    cx2.lineTo(mx+neckW,c.y+c.h*0.28);
+    cx2.bezierCurveTo(mx+c.w*0.65,c.y+c.h*0.38,c.x+c.w,c.y+c.h*0.58,c.x+c.w,c.y+c.h);
+    cx2.lineTo(c.x,c.y+c.h); cx2.bezierCurveTo(c.x,c.y+c.h*0.58,mx-c.w*0.65,c.y+c.h*0.38,mx-neckW,c.y+c.h*0.28);
+    cx2.closePath();
+  } else if(c.shape==='tube'){
+    cx2.roundRect(c.x,c.y,c.w,c.h,c.w/2);
+  } else if(c.shape==='crucible'){
+    cx2.moveTo(c.x,c.y); cx2.lineTo(c.x+c.w,c.y);
+    cx2.lineTo(c.x+c.w*0.82,c.y+c.h); cx2.lineTo(c.x+c.w*0.18,c.y+c.h); cx2.closePath();
+  } else {
+    cx2.rect(c.x,c.y,c.w,c.h);
+  }
+  cx2.clip();
+
+  // Draw layers bottom→top (sorted by density desc)
+  const sorted=[...c.layers].sort((a,b)=>(b.ch.den||1)-(a.ch.den||1));
+  let curY=c.y+c.h;
+  for(const l of sorted){
+    const ratio=l.vol/c.cap;
+    const lh=c.h*ratio*fillRatio;
+    const ly=curY-lh;
+    const col=l.ch.col||'#4488ff';
+    const t=Date.now()*0.002;
+    if(l.state==='gas'){
+      cx2.fillStyle=rgba(col,0.22);
+      cx2.fillRect(c.x,ly,c.w,lh);
+    } else if(l.state==='solid'){
+      cx2.fillStyle=rgba(col,0.75);
+      cx2.fillRect(c.x+3,ly+1,c.w-6,lh-1);
+    } else if(l.state==='plasma'){
+      const g=cx2.createLinearGradient(c.x,ly,c.x+c.w,ly+lh);
+      g.addColorStop(0,rgba(col,1)); g.addColorStop(0.5,'rgba(255,255,255,0.9)'); g.addColorStop(1,rgba(col,1));
+      cx2.fillStyle=g;
+      cx2.fillRect(c.x,ly,c.w,lh);
+      // plasma arcs
+      if(Math.random()<0.4){
+        cx2.strokeStyle='rgba(255,255,255,0.7)';cx2.lineWidth=1;
+        cx2.beginPath();cx2.moveTo(c.x+Math.random()*c.w,ly+Math.random()*lh);
+        cx2.lineTo(c.x+Math.random()*c.w,ly+Math.random()*lh);cx2.stroke();
+      }
+    } else {
+      // liquid with wave
+      const g2=cx2.createLinearGradient(c.x,ly,c.x,ly+lh);
+      g2.addColorStop(0,rgba(col,0.88)); g2.addColorStop(1,rgba(col,0.62));
+      cx2.fillStyle=g2;
+      cx2.beginPath();
+      cx2.moveTo(c.x,ly);
+      for(let wx=c.x;wx<=c.x+c.w;wx+=4){
+        cx2.lineTo(wx,ly+Math.sin((wx-c.x)*0.12+t)*2.5+Math.sin((wx-c.x)*0.22+t*1.3)*1.5);
+      }
+      cx2.lineTo(c.x+c.w,ly+lh);cx2.lineTo(c.x,ly+lh);cx2.closePath();cx2.fill();
+      // shimmer
+      cx2.fillStyle='rgba(255,255,255,0.04)';
+      cx2.fillRect(c.x+c.w*0.1,ly,c.w*0.12,lh);
+    }
+    curY-=lh;
+  }
+  cx2.restore();
+}
+
+function drawEquipment(eq){
+  const isHov=G.hovered&&G.hovered.id===eq.id;
+  cx2.save();
+  cx2.fillStyle=eq.active?rgba(nameToHex(eq.def.name),0.25):'rgba(12,12,28,0.85)';
+  cx2.strokeStyle=eq.active?'#00cfff':isHov?'rgba(0,207,255,0.7)':'rgba(70,80,130,0.7)';
+  cx2.lineWidth=isHov||eq.active?2:1.2;
+  cx2.beginPath();cx2.roundRect(eq.x,eq.y,eq.w,eq.h,6);cx2.fill();cx2.stroke();
+  cx2.font=`${Math.min(eq.w,eq.h)*0.48}px serif`;
+  cx2.textAlign='center';cx2.textBaseline='middle';
+  cx2.fillText(eq.def.icon,eq.x+eq.w/2,eq.y+eq.h/2);
+  cx2.font='8px Courier New';cx2.fillStyle='#556';cx2.textBaseline='top';
+  cx2.fillText(eq.active?'ON':'OFF',eq.x+eq.w/2,eq.y+eq.h+2);
+  if(eq.active){
+    cx2.strokeStyle=rgba('#00cfff',0.35+Math.sin(Date.now()*0.006)*0.25);
+    cx2.lineWidth=1.5;cx2.setLineDash([4,4]);
+    cx2.beginPath();cx2.roundRect(eq.x-4,eq.y-4,eq.w+8,eq.h+8,9);cx2.stroke();
+    cx2.setLineDash([]);
+  }
+  cx2.restore();
+}
+
+function drawPourLine(fr,to){
+  const fx=fr.x+fr.w/2,fy=fr.y+fr.h,tx=to.x+to.w/2,ty=to.y;
+  const col=(fr.layers[0]&&fr.layers[0].ch.col)||'#4488ff';
+  cx2.save();
+  cx2.strokeStyle=rgba(col,0.75);cx2.lineWidth=5;cx2.lineCap='round';
+  cx2.setLineDash([5,7]);cx2.lineDashOffset=-(Date.now()*0.06%12);
+  cx2.beginPath();cx2.moveTo(fx,fy);cx2.bezierCurveTo(fx,fy+35,tx,ty-35,tx,ty);cx2.stroke();
+  cx2.setLineDash([]);
+  cx2.fillStyle=col;cx2.font='bold 11px serif';cx2.textAlign='center';
+  cx2.fillText('▼',tx,ty-7);
+  cx2.restore();
+}
+
+function drawExplosions(){
+  G.explosions.forEach(e=>{
+    const p=e.t/e.dur;
+    const g=cx2.createRadialGradient(e.x,e.y,0,e.x,e.y,e.r);
+    g.addColorStop(0,`rgba(255,210,60,${0.9*(1-p)})`);
+    g.addColorStop(0.35,`rgba(255,90,0,${0.7*(1-p)})`);
+    g.addColorStop(0.75,`rgba(80,20,0,${0.35*(1-p)})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    cx2.fillStyle=g;
+    cx2.beginPath();cx2.arc(e.x,e.y,e.r,0,Math.PI*2);cx2.fill();
+    if(p<0.25){
+      cx2.fillStyle=`rgba(255,255,255,${(0.25-p)/0.25*0.9})`;
+      cx2.beginPath();cx2.arc(e.x,e.y,e.r*0.28*(1-p/0.25),0,Math.PI*2);cx2.fill();
+    }
+  });
+}
+function drawFires(){
+  G.fires.forEach(f=>{
+    const p=f.t;
+    const h=f.sz*(1.2-p*0.8);
+    const g=cx2.createRadialGradient(f.x,f.y,0,f.x,f.y-h*0.4,h*0.9);
+    g.addColorStop(0,`rgba(255,245,80,${0.8*(1-p)})`);
+    g.addColorStop(0.45,`rgba(255,75,0,${0.65*(1-p)})`);
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    cx2.fillStyle=g;
+    cx2.beginPath();cx2.ellipse(f.x,f.y-h*0.25,h*0.38,h*0.55,0,0,Math.PI*2);cx2.fill();
+  });
+}
+function drawParticles(){
+  G.particles.forEach(p=>{
+    const a=Math.max(0,p.life/p.maxLife);
+    cx2.globalAlpha=a;
+    cx2.fillStyle=p.col;
+    cx2.beginPath();cx2.arc(p.x,p.y,Math.max(0.5,p.r*a),0,Math.PI*2);cx2.fill();
+  });
+  cx2.globalAlpha=1;
+}
+
+// ─── HELPERS ───────────────────────────────────────────────────
+function rgba(hex,a){
+  if(!hex||hex.length<7)return `rgba(128,128,128,${a})`;
+  const r=parseInt(hex.slice(1,3),16)||128;
+  const g=parseInt(hex.slice(3,5),16)||128;
+  const b2=parseInt(hex.slice(5,7),16)||128;
+  return `rgba(${r},${g},${b2},${a})`;
+}
+function blendCol(c1,c2,t){
+  const p=h=>[parseInt(h.slice(1,3),16)||128,parseInt(h.slice(3,5),16)||128,parseInt(h.slice(5,7),16)||128];
+  const a=p(c1),b=p(c2);
+  const r=Math.round(a[0]*(1-t)+b[0]*t),g=Math.round(a[1]*(1-t)+b[1]*t),bl=Math.round(a[2]*(1-t)+b[2]*t);
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${bl.toString(16).padStart(2,'0')}`;
+}
+function nameToHex(n){
+  const colors={Heater:'#ff4400',Freezer:'#0088ff',Mixer:'#8844ff',Centrifuge:'#0088cc',Electrolyzer:'#ffdd00','Pressure Chamber':'#888888','UV Laser':'#ffff00',Condenser:'#88aaff'};
+  return colors[n]||'#4488ff';
+}
+function statObj(){document.getElementById('sobj').textContent=G.objects.length;}
+function ptIn(px,py,o){return px>=o.x&&px<=o.x+o.w&&py>=o.y&&py<=o.y+o.h+30;}
+function findAt(mx,my){
+  for(let i=G.objects.length-1;i>=0;i--){if(ptIn(mx,my,G.objects[i]))return G.objects[i];}
+  return null;
+}
+
+// ─── NOTIFICATIONS ─────────────────────────────────────────────
+const notifEl=document.getElementById('notifs');
+function notify(msg,type='info'){
+  if(notifEl.children.length>6)notifEl.removeChild(notifEl.firstChild);
+  const d=document.createElement('div');
+  d.className=`notif ${type}`;d.textContent=msg;
+  notifEl.appendChild(d);
+  setTimeout(()=>{if(d.parentNode)d.remove();},3200);
+}
+
+// ─── TOOLTIP ───────────────────────────────────────────────────
+const tipEl=document.getElementById('tip');
+function showTip(o,mx,my){
+  let html=`<h4>`;
+  if(o.kind==='equipment') html+=`${o.def.icon} ${o.def.name} [${o.active?'ON':'OFF'}]</h4>`;
+  else{
+    const tv=totalVol(o);
+    html+=`${CTYPES[o.type]?.name||o.type}</h4>`;
+    html+=`<div class="trow"><span>Temp</span><span class="tval">${Math.round(o.temp)}°C</span></div>`;
+    const tp=Math.min(100,Math.max(0,(o.temp+100)/1300*100));
+    const tc=o.temp>200?'#f97316':o.temp<0?'#60a5fa':'#34d399';
+    html+=`<div class="tbar"><div class="tbarfill" style="width:${tp}%;background:${tc}"></div></div>`;
+    html+=`<div class="trow"><span>Volume</span><span class="tval">${Math.round(tv)}/${o.cap}ml</span></div>`;
+    html+=`<div class="tbar"><div class="tbarfill" style="width:${tv/o.cap*100}%;background:#60a5fa"></div></div>`;
+    html+=`<div class="trow"><span>Pressure</span><span class="tval">${Math.round(o.pressure)} kPa</span></div>`;
+    if(o.layers.length){
+      html+=`<div style="color:#445;margin-top:4px;font-size:8px">CONTENTS:</div>`;
+      o.layers.forEach(l=>{
+        const picons=l.ch.props.map(p=>({flammable:'🔥',explosive:'💥',toxic:'☠️',corrosive:'⚗️',reactive:'⚡',radioactive:'☢️',oxidizer:'🌊',cryogenic:'❄️',magnetic:'🧲'}[p]||'')).join('');
+        html+=`<div class="trow"><span style="color:${l.ch.col}">${l.ch.f}</span><span class="tval">${Math.round(l.vol)}ml ${picons}</span></div>`;
+        html+=`<div style="color:#556;font-size:8px">State: ${l.state}</div>`;
+      });
+    }
+  }
+  tipEl.innerHTML=html;
+  let tx=mx+12,ty=my-8;
+  if(tx+170>cv.width)tx=mx-180;
+  if(ty+180>cv.height)ty=my-190;
+  tipEl.style.left=Math.max(0,tx)+'px';
+  tipEl.style.top=Math.max(0,ty)+'px';
+  tipEl.style.display='block';
+}
+function hideTip(){tipEl.style.display='none';}
+
+// ─── CONTEXT MENU ──────────────────────────────────────────────
+const ctxEl=document.getElementById('ctx');
+function showCtx(o,mx,my){
+  ctxEl.innerHTML='';
+  const items=o.kind==='equipment'?[
+    {icon:'⚡',lbl:o.active?'Deactivate':'Activate', fn:()=>{o.active=!o.active;notify(`${o.def.name} ${o.active?'ON':'OFF'}`,'ok');}},
+    {sep:true},
+    {icon:'❌',lbl:'Remove',cls:'red',fn:()=>{G.objects=G.objects.filter(x=>x.id!==o.id);statObj();}},
+  ]:[
+    {icon:'🚿',lbl:'Pour to…',fn:()=>{G.pouring={fromId:o.id,toId:null,awaitTarget:true};notify('Click a target container','info');}},
+    {icon:'🔥',lbl:'Ignite (+500°C)',fn:()=>{o.temp+=500;spawnFire(o.x+o.w/2,o.y,40);checkRxn(o);}},
+    {icon:'❄️',lbl:'Freeze (-200°C)',fn:()=>{o.temp=Math.max(o.temp-200,-250);}},
+    {icon:'🌀',lbl:'Shake (force react)',fn:()=>{o.shaking=0.6;checkRxn(o);notify('Shaking!','ok');}},
+    {icon:'💨',lbl:'Pressurize (+100)',fn:()=>{o.pressure+=100;checkRxn(o);}},
+    {icon:'🧬',lbl:'Force Mutation',fn:()=>tryMutation(o)},
+    {sep:true},
+    {icon:'💧',lbl:'Pour Half Out',fn:()=>o.layers.forEach(l=>l.vol/=2)},
+    {icon:'🗑️',lbl:'Empty',fn:()=>{o.layers=[];notify('Emptied','ok');}},
+    {sep:true},
+    {icon:'❌',lbl:'Remove',cls:'red',fn:()=>{G.objects=G.objects.filter(x=>x.id!==o.id);statObj();}},
+  ];
+  items.forEach(item=>{
+    if(item.sep){const s=document.createElement('div');s.className='csep';ctxEl.appendChild(s);return;}
+    const d=document.createElement('div');
+    d.className='ci'+(item.cls?' '+item.cls:'');
+    d.innerHTML=`<span>${item.icon}</span>${item.lbl}`;
+    d.onclick=()=>{item.fn();ctxEl.style.display='none';};
+    ctxEl.appendChild(d);
+  });
+  let cx3=mx,cy=my;
+  if(cx3+170>cv.width)cx3=mx-175;
+  if(cy+items.length*30>cv.height)cy=my-items.length*30;
+  ctxEl.style.left=Math.max(0,cx3)+'px';ctxEl.style.top=Math.max(0,cy)+'px';
+  ctxEl.style.display='block';
+}
+document.addEventListener('click',e=>{if(!ctxEl.contains(e.target))ctxEl.style.display='none';});
+
+// ─── MOUSE EVENTS ──────────────────────────────────────────────
+let mouseX=0,mouseY=0;
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();
+  mouseX=e.clientX-r.left; mouseY=e.clientY-r.top;
+  if(G.dragging){
+    G.dragging.x=mouseX-G.dragOX;
+    G.dragging.y=mouseY-G.dragOY;
+    hideTip(); return;
+  }
+  const o=findAt(mouseX,mouseY);
+  G.hovered=o;
+  if(o&&!G.selChem)showTip(o,mouseX,mouseY);
+  else hideTip();
+  cv.style.cursor=G.dragging?'grabbing':G.selChem?'cell':o?'grab':'default';
+});
+
+cv.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;
+  ctxEl.style.display='none';
+  const o=findAt(mouseX,mouseY);
+  // Awaiting pour target
+  if(G.pouring&&G.pouring.awaitTarget&&o&&o.kind==='container'&&o.id!==G.pouring.fromId){
+    G.pouring.toId=o.id; G.pouring.awaitTarget=false; return;
+  }
+  // Add chem if selected
+  if(G.selChem&&o&&o.kind==='container'){
+    addChem(o,G.selChem.id,50); return;
+  }
+  // Drag
+  if(o){
+    G.dragging=o;
+    G.dragOX=mouseX-o.x; G.dragOY=mouseY-o.y;
+    cv.style.cursor='grabbing';
+  }
+});
+
+cv.addEventListener('mouseup',()=>{
+  G.dragging=null; cv.style.cursor=G.selChem?'cell':'default';
+});
+
+cv.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  const o=findAt(mouseX,mouseY);
+  if(o)showCtx(o,mouseX,mouseY);
+});
+
+cv.addEventListener('dblclick',()=>{
+  const o=findAt(mouseX,mouseY);
+  if(o&&o.kind==='equipment'){
+    o.active=!o.active;
+    notify(`${o.def.name} ${o.active?'✅ ON':'❌ OFF'}`,o.active?'ok':'warn');
+  }
+});
+
+// ─── KEYBOARD ──────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  const cx3=cv.width/2,cy=cv.height/2;
+  const jitter=()=>({x:cx3+(Math.random()-0.5)*220,y:cy+(Math.random()-0.5)*150});
+  if(e.key==='Escape'){deselChem();G.pouring=null;}
+  if(e.key==='b'||e.key==='B'){const j=jitter();spawnContainer('beaker',j.x,j.y);}
+  if(e.key==='f'||e.key==='F'){const j=jitter();spawnContainer('flask',j.x,j.y);}
+  if(e.key==='t'||e.key==='T'){const j=jitter();spawnContainer('tube',j.x,j.y);}
+  if(e.key==='r'||e.key==='R'){const j=jitter();spawnContainer('reactor',j.x,j.y);}
+  if(e.key==='c'||e.key==='C'){const j=jitter();spawnContainer('crucible',j.x,j.y);}
+  if(e.key==='n'||e.key==='N')nuke();
+  if(e.key===' '){e.preventDefault();G.paused=!G.paused;notify(G.paused?'⏸ PAUSED':'▶ RESUMED','info');}
+  if((e.key==='Delete'||e.key==='Backspace')&&G.hovered){
+    G.objects=G.objects.filter(o=>o.id!==G.hovered.id);
+    G.hovered=null; statObj();
+  }
+});
+
+// ─── NUKE ──────────────────────────────────────────────────────
+function nuke(){
+  notify('☢️ NUKE SEQUENCE INITIATED…','bad');
+  G.objects.forEach(o=>{
+    if(o.kind==='equipment')return;
+    setTimeout(()=>{
+      triggerExplosion(o.x+o.w/2,o.y+o.h/2,'mega');
+      spawnFire(o.x+o.w/2,o.y,70);
+    },Math.random()*1200);
+  });
+  setTimeout(()=>{
+    G.objects=[]; G.fires=[]; statObj();
+    notify('💥 LAB COMPLETELY DESTROYED 💥','bad');
+  },1800);
+}
+
+// ─── LEFT PANEL ────────────────────────────────────────────────
+function renderChemList(filter=''){
+  const fl=filter.toLowerCase();
+  const listEl=document.getElementById('clist');
+  listEl.innerHTML='';
+  Object.keys(DB).forEach(cat=>{
+    const base=DB[cat].filter(c=>!fl||c.name.toLowerCase().includes(fl)||c.f.toLowerCase().includes(fl));
+    const dyn=ALLCHEMS.filter(c=>c.cat===cat&&c.dynamic&&(!fl||c.name.toLowerCase().includes(fl)));
+    const all=[...base,...dyn];
+    if(!all.length)return;
+    const catEl=document.createElement('div');catEl.className='ccat';
+    catEl.innerHTML=`<div class="ccatname">${cat}</div>`;
+    all.forEach(ch=>{
+      const isSel=G.selChem&&G.selChem.id===ch.id;
+      const d=document.createElement('div');
+      d.className='citem'+(isSel?' sel':'');
+      const picons=ch.props.map(p=>({flammable:'🔥',explosive:'💥',toxic:'☠️',corrosive:'⚗️',reactive:'⚡',radioactive:'☢️',oxidizer:'🌊',cryogenic:'❄️',magnetic:'🧲'}[p]||'')).join('');
+      d.innerHTML=`<div class="cdot" style="background:${ch.col}"></div><div class="cname">${ch.name}</div><div class="cprop">${picons}</div>`;
+      d.onclick=()=>selectChem(ch);
+      catEl.appendChild(d);
+    });
+    listEl.appendChild(catEl);
+  });
+}
+
+function selectChem(ch){
+  G.selChem=ch;
+  renderChemList(document.getElementById('csearch').value);
+  const bar=document.getElementById('selbar');
+  bar.classList.add('show');
+  document.getElementById('selname').textContent=`${ch.name} (${ch.f})`;
+  const propsEl=document.getElementById('selprops');
+  propsEl.innerHTML=ch.props.map(p=>`<span class="sprop ${p}">${p}</span>`).join('');
+  cv.style.cursor='cell';
+}
+function deselChem(){
+  G.selChem=null;
+  document.getElementById('selbar').classList.remove('show');
+  renderChemList(document.getElementById('csearch').value);
+  cv.style.cursor='default';
+}
+
+document.getElementById('csearch').addEventListener('input',e=>renderChemList(e.target.value));
+
+// ─── JOURNAL ───────────────────────────────────────────────────
+function renderJournal(){
+  const jl=document.getElementById('jlist');
+  if(!G.discoveries.length){jl.innerHTML='<div class="jempty">🔬 No discoveries yet.<br>Mix chemicals to find reactions!</div>';return;}
+  jl.innerHTML='';
+  [...G.discoveries].reverse().forEach(d=>{
+    const e=document.createElement('div');e.className='jentry';
+    e.innerHTML=`<div class="jtitle">${d.rxn.name||'Unknown'}</div><div class="jeq">${d.rxn.eq||''}</div><div class="jtime">${d.time}</div>`;
+    jl.appendChild(e);
+  });
+}
+
+// ─── RIGHT PANEL TABS ──────────────────────────────────────────
+document.querySelectorAll('[data-rtab]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-rtab]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['tools','journal','auto'].forEach(t=>{
+      document.getElementById('rt'+t).style.display=btn.dataset.rtab===t?'block':'none';
+    });
+  });
+});
+
+// ─── TOOL BUTTONS ──────────────────────────────────────────────
+document.querySelectorAll('[data-a]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const a=btn.dataset.a;
+    const cx3=cv.width/2,cy=cv.height/2;
+    const j=()=>({x:cx3+(Math.random()-0.5)*200,y:cy+(Math.random()-0.5)*130});
+    const jj=j();
+    // Containers
+    if(['beaker','flask','tube','reactor','crucible'].includes(a)){spawnContainer(a,jj.x,jj.y);return;}
+    // Equipment
+    if(['heater','freezer','mixer','centrifuge','chamber','electro','uv','condenser'].includes(a)){spawnEquipment(a,jj.x,jj.y-60);return;}
+    // Actions
+    const conts=G.objects.filter(o=>o.kind==='container');
+    if(a==='ignite-all'){conts.forEach(c=>{c.temp+=400;spawnFire(c.x+c.w/2,c.y,35);checkRxn(c);});notify('🔥 All ignited!','warn');}
+    if(a==='freeze-all'){conts.forEach(c=>{c.temp=Math.max(c.temp-200,-250);});notify('❄️ All frozen!','info');}
+    if(a==='shake-all'){conts.forEach(c=>{c.shaking=0.7;checkRxn(c);});notify('🌀 Shaking all!','info');}
+    if(a==='pressurize'){conts.forEach(c=>{c.pressure+=100;checkRxn(c);});notify('💨 Pressurized!','info');}
+    if(a==='nuke')nuke();
+    if(a==='clear'){G.objects=[];G.particles=[];G.fires=[];G.explosions=[];statObj();notify('🗑️ Lab cleared','info');}
+    // Automation
+    if(a==='pump'){
+      const au={id:uid(),atype:'pump',active:true,label:'Auto Pump'};
+      G.automations.push(au); renderAutoList();
+      notify('💧 Auto pump: transfers between containers every 2.5s','ok');
+    }
+    if(a==='dispenser'){
+      const cid=G.selChem?G.selChem.id:'water';
+      const cname=G.selChem?G.selChem.name:'Water';
+      const au={id:uid(),atype:'dispenser',active:true,label:`Dispenser: ${cname}`,chemId:cid};
+      G.automations.push(au); renderAutoList();
+      notify(`🚿 Auto dispenser: ${cname} (select chem first to change)`, 'ok');
+    }
+    if(a==='timer'){
+      const au={id:uid(),atype:'timer',active:true,label:'Reaction Timer'};
+      G.automations.push(au); renderAutoList();
+      notify('⏱️ Timer trigger: forces reactions every 2.5s','ok');
+    }
+    if(a==='sensor'){notify('📡 Sensor monitors chem levels (shown in tooltip)','info');}
+    if(a==='belt'){notify('➡️ Conveyor belt: drag & drop containers manually to connect','info');}
+  });
+});
+
+function addAutoEntry(eq){
+  const au={id:eq.id,atype:'equipment',active:false,label:eq.def.name,ref:eq};
+  G.automations.push(au);
+  renderAutoList();
+}
+
+function renderAutoList(){
+  const el=document.getElementById('autolist');
+  const relevant=G.automations.filter(a=>a.atype!=='equipment');
+  if(!relevant.length){el.innerHTML='<div style="font-size:9px;color:#445;padding:4px">No automation active.</div>';return;}
+  el.innerHTML='';
+  relevant.forEach(au=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;gap:6px;padding:4px 6px;background:#111125;border:1px solid #1e1e40;border-radius:3px;margin-bottom:2px;font-size:9px;cursor:pointer';
+    const dot=document.createElement('div');
+    dot.style.cssText=`width:7px;height:7px;border-radius:50%;background:${au.active?'#10b981':'#ef4444'}`;
+    d.appendChild(dot);
+    const lbl=document.createElement('span');lbl.style.color='#8899bb';lbl.textContent=au.label;d.appendChild(lbl);
+    const tog=document.createElement('span');tog.style.cssText='margin-left:auto;color:#445';tog.textContent=au.active?'ON':'OFF';d.appendChild(tog);
+    d.onclick=()=>{
+      au.active=!au.active;
+      dot.style.background=au.active?'#10b981':'#ef4444';
+      tog.textContent=au.active?'ON':'OFF';
+    };
+    el.appendChild(d);
+  });
+}
+
+// ─── MODE BUTTONS ──────────────────────────────────────────────
+document.querySelectorAll('[data-mode]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    G.mode=btn.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const msgs={
+      sandbox:'🔓 SANDBOX — Unlimited, no limits',
+      relax:'😌 RELAX — Slow, peaceful, no explosions',
+      normal:'⚗️ NORMAL — Balanced chemistry',
+      expert:'🎓 EXPERT — Faster reactions, harder',
+      chaos:'⚡ CHAOS — EVERYTHING IS UNSTABLE!!',
+    };
+    notify(msgs[G.mode]||G.mode,'ok');
+    if(G.mode==='chaos')setTimeout(()=>notify('⚠️ Containers may spontaneously explode!','bad'),600);
+  });
+});
+
+// ─── ENV SLIDERS ───────────────────────────────────────────────
+document.getElementById('eT').addEventListener('input',e=>{
+  G.env.temp=+e.target.value;
+  document.getElementById('eTv').textContent=G.env.temp+'°C';
+});
+document.getElementById('eP').addEventListener('input',e=>{
+  G.env.pressure=+e.target.value;
+  document.getElementById('ePv').textContent=G.env.pressure+' kPa';
+  G.objects.forEach(o=>{if(o.kind==='container')o.pressure=G.env.pressure;});
+});
+document.getElementById('eG').addEventListener('input',e=>{
+  G.env.gravity=+e.target.value;
+  document.getElementById('eGv').textContent=G.env.gravity+' m/s²';
+});
+
+// ─── MAIN LOOP ─────────────────────────────────────────────────
+function loop(now){
+  update(now);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────
+renderChemList();
+renderJournal();
+
+// Demo lab setup
+const demos=[
+  {type:'beaker',  x:160,y:300,chems:[{id:'water',v:100},{id:'hcl',v:50}]},
+  {type:'flask',   x:290,y:280,chems:[{id:'naoh',v:80}]},
+  {type:'beaker',  x:420,y:305,chems:[{id:'etoh',v:120}]},
+  {type:'reactor', x:560,y:270,chems:[{id:'h2o2',v:80},{id:'fe',v:40}]},
+  {type:'tube',    x:710,y:295,chems:[{id:'na',v:25}]},
+  {type:'beaker',  x:820,y:300,chems:[{id:'thermite',v:60}]},
+];
+demos.forEach(d=>{
+  const c=spawnContainer(d.type,d.x,d.y);
+  if(c)d.chems.forEach(ch=>{
+    const found=ALLCHEMS.find(x=>x.id===ch.id);
+    if(found)c.layers.push({ch:found,vol:ch.v,temp:c.temp,state:found.st});
+  });
+});
+
+// Starter equipment
+spawnEquipment('heater',160,215);
+spawnEquipment('freezer',420,215);
+
+setTimeout(()=>{
+  notify('⚗️ Welcome to Wildan\'s Alchemy ULTRA v4!','ok');
+  setTimeout(()=>notify('💡 Click a chemical → click a container to add it','info'),900);
+  setTimeout(()=>notify('🖱️ Right-click containers for full options menu','info'),1800);
+  setTimeout(()=>notify('💥 Press N to NUKE the entire lab!','warn'),2700);
+},400);
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

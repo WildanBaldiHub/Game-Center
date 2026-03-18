@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Last Light - 97% Authentic Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Creepster&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; font-family: 'Orbitron', sans-serif; outline: none; }
+        body { background: #000; color: #fff; overflow: hidden; touch-action: none; }
+
+        /* VIGNETTE & CROSSHAIR */
+        #vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.95) 100%); pointer-events: none; z-index: 5; }
+        #crosshair { position: fixed; top: 50%; left: 50%; width: 4px; height: 4px; background: rgba(255,255,255,0.8); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; box-shadow: 0 0 5px #fff; }
+
+        /* IN-GAME HUD (JAM & NYAWA) */
+        #hud-top { position: fixed; top: 20px; left: 20px; right: 20px; display: none; justify-content: space-between; align-items: flex-start; z-index: 8; pointer-events: none; }
+        #clock-ui { background: rgba(0,0,0,0.8); border: 2px solid #555; padding: 15px 30px; border-radius: 10px; font-size: 2.5rem; font-weight: bold; color: #fff; text-shadow: 0 0 10px #fff; }
+        #lives-ui { font-size: 2.5rem; letter-spacing: 5px; color: #ff003c; text-shadow: 0 0 15px #ff003c; }
+
+        /* INTERACTION UI */
+        #interact-ui { position: fixed; top: 55%; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 9; display: none; text-align: center; }
+        #interact-text { background: rgba(0,0,0,0.8); border: 1px solid #fff; padding: 10px 20px; font-size: 1.2rem; font-weight: bold; letter-spacing: 2px; border-radius: 5px; color: #fff; }
+        #charge-bar-bg { width: 250px; height: 15px; background: #222; border: 2px solid #fff; margin-top: 10px; display: none; }
+        #charge-bar-fill { height: 100%; width: 0%; background: #00ff00; }
+
+        /* MAIN MENU */
+        #main-menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a0505 0%, #000 100%); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #main-menu h1 { font-family: 'Creepster', cursive; font-size: 5vw; color: #00f2ff; text-shadow: 0 0 30px #00f2ff; margin-bottom: 10px; }
+        #main-menu p { color: #aaa; margin-bottom: 30px; text-align: center; max-width: 600px; line-height: 1.5; }
+        
+        .mode-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 90%; max-width: 600px; }
+        .btn { background: #111; border: 2px solid #333; color: #fff; padding: 15px; font-family: 'Orbitron'; font-weight: bold; font-size: 1.1rem; cursor: pointer; border-radius: 8px; transition: 0.2s; box-shadow: 0 5px 0 #000; }
+        .btn:hover { background: #222; border-color: #00f2ff; color: #00f2ff; transform: translateY(-2px); }
+        .btn:active { transform: translateY(5px); box-shadow: 0 0 0 #000; }
+        .btn.free { grid-column: span 2; background: #002244; border-color: #00aaff; color: #00aaff; }
+
+        /* LAPTOP SCREEN */
+        #laptop-ui { position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: rgba(5, 10, 20, 0.95); border: 4px solid #334455; z-index: 50; display: none; flex-direction: column; padding: 40px; box-shadow: 0 0 100px #000; }
+        #laptop-ui h2 { color: #00f2ff; border-bottom: 2px solid #334455; padding-bottom: 10px; margin-bottom: 30px; text-align: center; font-size: 2.5rem; }
+        .gen-row { display: flex; align-items: center; margin-bottom: 30px; }
+        .gen-label { font-size: 2.5rem; font-weight: bold; width: 80px; color: #fff; }
+        .bar-bg { flex: 1; height: 40px; background: #111; border: 2px solid #555; position: relative; }
+        .bar-fill { height: 100%; background: #00ff00; width: 100%; transition: width 0.2s, background 0.2s; }
+        #close-pc { margin-top: auto; background: #ff003c; color: #fff; border: none; padding: 20px; cursor: pointer; font-family: 'Orbitron'; font-size: 1.5rem; font-weight: bold; border-radius: 5px;}
+
+        /* JUMPSCARE & GAME OVER */
+        #jumpscare { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 200; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        #jumpscare img { height: 100%; object-fit: contain; animation: shake 0.05s infinite; filter: contrast(1.5) drop-shadow(0 0 30px #00f2ff); }
+        #gameover-text { position: absolute; font-family: 'Creepster'; font-size: 5rem; color: #ff003c; text-shadow: 0 0 20px #ff003c; display: none; z-index: 201; }
+        #win-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 300; display: none; justify-content: center; align-items: center; flex-direction: column; color: #000; }
+        #win-screen h1 { font-size: 4rem; color: #00f2ff; text-shadow: 0 0 10px #000; margin-bottom: 20px;}
+        
+        @keyframes shake { 0% { transform: translate(20px, 20px) scale(1.1); } 50% { transform: translate(-20px, -20px) scale(1.3); } 100% { transform: translate(20px, -20px) scale(1.1); } }
+    </style>
+</head>
+<body>
+
+    <div id="vignette"></div>
+    <div id="crosshair"></div>
+    
+    <div id="hud-top">
+        <div id="clock-ui">12:00 AM</div>
+        <div id="lives-ui">❤️❤️❤️</div>
+    </div>
+
+    <div id="interact-ui">
+        <div id="interact-text">CLICK TO MOVE</div>
+        <div id="charge-bar-bg"><div id="charge-bar-fill"></div></div>
+    </div>
+
+    <div id="main-menu">
+        <h1>THE LAST LIGHT</h1>
+        <p>Bertahan hidup dari jam 12:00 AM hingga 6:00 AM.<br>Denah ruangan diacak setiap kali main. Cari 4 Generator dan jangan biarkan mati. Arahkan mouse ke pinggir layar untuk menoleh.</p>
+        
+        <div class="mode-grid">
+            <button class="btn free" onclick="startGame('free')">🕊️ FREE PLAY (Explore)</button>
+            <button class="btn" onclick="startGame('easy')">🟢 EASY</button>
+            <button class="btn" onclick="startGame('normal')">🟡 NORMAL</button>
+            <button class="btn" onclick="startGame('hard')">🟠 HARD</button>
+            <button class="btn" onclick="startGame('extreme')">🔴 EXTREME</button>
+            <button class="btn" style="background:#300; border-color:#f00; color:#f00;" onclick="startGame('curse')">💀 CURSE</button>
+            <button class="btn" style="background:#100; border-color:#900; color:#900;" onclick="startGame('nightmare')">🩸 NIGHTMARE</button>
+        </div>
+    </div>
+
+    <div id="laptop-ui">
+        <h2>System Monitoring v3.0</h2>
+        <div class="gen-row"><div class="gen-label">A</div><div class="bar-bg"><div class="bar-fill" id="bar-A"></div></div></div>
+        <div class="gen-row"><div class="gen-label">B</div><div class="bar-bg"><div class="bar-fill" id="bar-B"></div></div></div>
+        <div class="gen-row"><div class="gen-label">C</div><div class="bar-bg"><div class="bar-fill" id="bar-C"></div></div></div>
+        <div class="gen-row"><div class="gen-label">D</div><div class="bar-bg"><div class="bar-fill" id="bar-D"></div></div></div>
+        <button id="close-pc" onclick="closeComputer()">EXIT TERMINAL</button>
+    </div>
+
+    <div id="jumpscare">
+        <img src="IC2.png" alt="Curse">
+        <div id="gameover-text">GAME OVER</div>
+    </div>
+
+    <div id="win-screen">
+        <h1>6:00 AM</h1>
+        <h2>ANDA BERHASIL BERTAHAN!</h2>
+        <button class="btn" style="color:#000; border-color:#000; margin-top:30px;" onclick="location.reload()">MAIN LAGI</button>
+    </div>
+
+<script>
+    // --- THREE.JS ENGINE SETUP ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x010101);
+    scene.fog = new THREE.FogExp2(0x000000, 0.04);
+
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+    
+    const flashLight = new THREE.SpotLight(0xffffff, 1.2, 50, Math.PI/4, 0.5, 1);
+    flashLight.position.set(0, 0, 0);
+    flashLight.target.position.set(0, 0, -1);
+    camera.add(flashLight); camera.add(flashLight.target);
+    scene.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // --- GAME STATE ---
+    const MODES = { 'free': 0, 'easy': 0.4, 'normal': 0.8, 'hard': 1.5, 'extreme': 2.2, 'curse': 3.0, 'nightmare': 4.5 };
+    
+    let GAME = {
+        active: false,
+        drainRate: 1,
+        currentNode: 0,
+        computerOpen: false,
+        chargingGen: null,
+        timeSeconds: 0, // 0 = 12 AM, 360 = 6 AM (6 menit gameplay nyata)
+        lives: 3
+    };
+
+    let allInteractables = [];
+    let gens = [];
+    let rooms = []; // Simpan data node ruangan procedurally generated
+
+    // --- PROCEDURAL MAP GENERATOR (Pengacakan Ruangan) ---
+    const ROOM_SIZE = 25;
+    
+    // Fungsi bikin tekstur dinding beda-beda biar ga nyasar
+    function createWallMat(baseColor, stripeColor) {
+        let cvs = document.createElement('canvas'); cvs.width = 256; cvs.height = 256;
+        let ctx = cvs.getContext('2d');
+        ctx.fillStyle = baseColor; ctx.fillRect(0,0,256,256);
+        ctx.fillStyle = stripeColor;
+        for(let i=0; i<256; i+=32) ctx.fillRect(0, i, 256, 4); // Garis horizontal
+        
+        let tex = new THREE.CanvasTexture(cvs);
+        tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(2, 2);
+        return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, side: THREE.BackSide });
+    }
+
+    const roomStyles = [
+        createWallMat('#111', '#000'), // Gelap
+        createWallMat('#1a0f0f', '#2a1a1a'), // Merah darah kering
+        createWallMat('#0f1a1a', '#1a2a2a'), // Hijau lumut
+        createWallMat('#1a1a0f', '#2a2a1a'), // Kuning kotor
+        createWallMat('#0f0f1a', '#1a1a2a')  // Biru pudar
+    ];
+
+    function generateMap() {
+        // Hapus map lama kalau ada
+        allInteractables.forEach(obj => scene.remove(obj.parent || obj));
+        allInteractables = []; gens = []; rooms = [];
+
+        // Grid 3x3 (Bisa sampe 9 ruangan)
+        let grid = [];
+        for(let x=0; x<3; x++) { grid[x] = []; for(let z=0; z<3; z++) grid[x][z] = null; }
+
+        // Start di tengah (1,1) = Safe Room
+        let nodesCreated = 0;
+        
+        function addNode(x, z, name) {
+            let id = nodesCreated++;
+            let style = id === 0 ? roomStyles[0] : roomStyles[Math.floor(Math.random() * roomStyles.length)];
+            let node = { id: id, gx: x, gz: z, px: (x-1)*ROOM_SIZE*1.5, pz: (z-1)*ROOM_SIZE*1.5, name: name, mat: style, connected: [] };
+            grid[x][z] = node;
+            rooms.push(node);
+            return node;
+        }
+
+        // Safe Room
+        let safeRoom = addNode(1, 1, 'Safe Room');
+
+        // Bikin percabangan acak (Random Walk)
+        let queue = [{x:1, z:1}];
+        let dirs = [[0,1], [1,0], [0,-1], [-1,0]];
+        
+        while(queue.length > 0 && nodesCreated < 9) {
+            let curr = queue.shift();
+            // Shuffle arah
+            dirs.sort(() => Math.random() - 0.5);
+            
+            for(let d of dirs) {
+                let nx = curr.x + d[0], nz = curr.z + d[1];
+                if(nx>=0 && nx<3 && nz>=0 && nz<3 && !grid[nx][nz]) {
+                    if(Math.random() < 0.7 || nodesCreated < 5) { // 70% chance nyabang
+                        let newNode = addNode(nx, nz, `Room ${nodesCreated}`);
+                        // Connect
+                        grid[curr.x][curr.z].connected.push(newNode);
+                        newNode.connected.push(grid[curr.x][curr.z]);
+                        queue.push({x:nx, z:nz});
+                    }
+                }
+            }
+        }
+
+        // --- BUILD 3D ROOMS ---
+        rooms.forEach(r => {
+            const roomMesh = new THREE.Mesh(new THREE.BoxGeometry(ROOM_SIZE, 15, ROOM_SIZE), r.mat);
+            roomMesh.position.set(r.px, 7.5, r.pz);
+            scene.add(roomMesh);
+
+            // Bikin Pintu antar koneksi
+            r.connected.forEach(target => {
+                let dx = Math.sign(target.gx - r.gx);
+                let dz = Math.sign(target.gz - r.gz);
+                
+                const doorGroup = new THREE.Group();
+                doorGroup.position.set(r.px + dx*(ROOM_SIZE/2 - 0.5), 5, r.pz + dz*(ROOM_SIZE/2 - 0.5));
+                
+                // Rotasi pintu sesuai arah
+                if(dx !== 0) doorGroup.rotation.y = Math.PI/2;
+
+                const doorMesh = new THREE.Mesh(new THREE.PlaneGeometry(8, 12), new THREE.MeshBasicMaterial({color: 0x00f2ff, transparent: true, opacity: 0.1, side: THREE.DoubleSide}));
+                doorGroup.add(doorMesh);
+
+                const hitbox = new THREE.Mesh(new THREE.BoxGeometry(8, 12, 4), new THREE.MeshBasicMaterial({visible: false}));
+                hitbox.userData = { type: 'move', from: r.id, to: target.id, text: 'CLICK TO ENTER' };
+                doorGroup.add(hitbox);
+
+                scene.add(doorGroup);
+                allInteractables.push(hitbox);
+            });
+        });
+
+        // --- PLACE GENERATORS ACAK ---
+        // Cari 4 ruangan terjauh dari Safe Room buat naruh generator
+        let farRooms = [...rooms].sort((a,b) => Math.hypot(b.px, b.pz) - Math.hypot(a.px, a.pz));
+        let genIds = ['A', 'B', 'C', 'D'];
+        
+        for(let i=0; i<4; i++) {
+            let r = farRooms[i];
+            const genGroup = new THREE.Group();
+            genGroup.position.set(r.px + (Math.random()-0.5)*10, 0, r.pz + (Math.random()-0.5)*10); // Posisi acak di dalem ruangan
+
+            const box = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 3), new THREE.MeshStandardMaterial({color: 0x222}));
+            box.position.y = 2; genGroup.add(box);
+
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.5), new THREE.MeshBasicMaterial({color: 0x00ff00}));
+            bulb.position.y = 4.5; genGroup.add(bulb);
+
+            const light = new THREE.PointLight(0x00ff00, 1.5, 20);
+            light.position.y = 4.5; genGroup.add(light);
+
+            const hitbox = new THREE.Mesh(new THREE.BoxGeometry(6, 8, 6), new THREE.MeshBasicMaterial({visible: false}));
+            hitbox.position.y = 3;
+            hitbox.userData = { type: 'gen', id: genIds[i], node: r.id, text: 'HOLD TO WIND UP' };
+            genGroup.add(hitbox);
+
+            scene.add(genGroup);
+            allInteractables.push(hitbox);
+            gens.push({ id: genIds[i], power: 100, bulb: bulb, light: light });
+        }
+
+        // --- PLACE LAPTOP ---
+        const laptopBox = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 1), new THREE.MeshBasicMaterial({color: 0x00f2ff, transparent: true, opacity: 0.3}));
+        laptopBox.position.set(safeRoom.px, 4, safeRoom.pz - 8); 
+        laptopBox.userData = { type: 'computer', node: 0, text: 'CHECK GENERATOR STATUS' };
+        scene.add(laptopBox);
+        allInteractables.push(laptopBox);
+    }
+
+    // --- CAMERA CONTROLS (EDGE PANNING) ---
+    let yaw = 0, pitch = 0;
+    let mouseX = 0, mouseY = 0;
+    
+    document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+
+    let touchX = 0, touchY = 0;
+    document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; touchY = e.touches[0].clientY; });
+    document.addEventListener('touchmove', e => {
+        if(!GAME.computerOpen && GAME.active) {
+            let dx = e.touches[0].clientX - touchX;
+            let dy = e.touches[0].clientY - touchY;
+            yaw -= dx * 0.005; pitch -= dy * 0.005;
+            touchX = e.touches[0].clientX; touchY = e.touches[0].clientY;
+        }
+    });
+
+    // --- INTERACTION ---
+    let hoveredObj = null;
+
+    function handleInteractStart() {
+        if(GAME.computerOpen || !GAME.active) return;
+        if(hoveredObj) {
+            let d = hoveredObj.userData;
+            if(d.type === 'move') {
+                GAME.currentNode = d.to;
+                let targetRoom = rooms.find(r => r.id === GAME.currentNode);
+                camera.position.set(targetRoom.px, 6, targetRoom.pz);
+            } 
+            else if(d.type === 'gen') GAME.chargingGen = d.id;
+            else if(d.type === 'computer') {
+                document.getElementById('laptop-ui').style.display = 'flex';
+                GAME.computerOpen = true;
+            }
+        }
+    }
+    function handleInteractEnd() { GAME.chargingGen = null; }
+
+    window.addEventListener('mousedown', handleInteractStart);
+    window.addEventListener('mouseup', handleInteractEnd);
+    window.addEventListener('touchstart', handleInteractStart);
+    window.addEventListener('touchend', handleInteractEnd);
+
+    function closeComputer() { document.getElementById('laptop-ui').style.display = 'none'; GAME.computerOpen = false; }
+
+    // --- GAME LOGIC ---
+    function updateLivesUI() {
+        let hearts = ""; for(let i=0; i<GAME.lives; i++) hearts += "❤️";
+        document.getElementById('lives-ui').innerText = hearts;
+    }
+
+    function startGame(mode) {
+        generateMap(); // Acak ruangan tiap mulai!
+        
+        GAME.drainRate = MODES[mode];
+        GAME.active = true;
+        GAME.currentNode = 0;
+        GAME.timeSeconds = 0;
+        GAME.lives = mode === 'free' ? 99 : 3;
+        
+        updateLivesUI();
+        document.getElementById('hud-top').style.display = mode === 'free' ? 'none' : 'flex';
+        document.getElementById('main-menu').style.display = 'none';
+        
+        let startRoom = rooms.find(r => r.id === 0);
+        camera.position.set(startRoom.px, 6, startRoom.pz);
+    }
+
+    function triggerJumpscare(failedGenId) {
+        GAME.active = false;
+        document.getElementById('laptop-ui').style.display = 'none';
+        document.getElementById('interact-ui').style.display = 'none';
+        
+        let js = document.getElementById('jumpscare');
+        js.style.display = 'flex';
+        document.getElementById('gameover-text').style.display = 'none';
+
+        // Kurangi Nyawa
+        GAME.lives--;
+        updateLivesUI();
+
+        if(GAME.lives > 0) {
+            // Respawn
+            setTimeout(() => {
+                js.style.display = 'none';
+                // Suntik nyawa gen yang mati jadi 50%
+                let failedGen = gens.find(g => g.id === failedGenId);
+                if(failedGen) failedGen.power = 50;
+                
+                // Balik ke safe room
+                GAME.currentNode = 0;
+                let startRoom = rooms.find(r => r.id === 0);
+                camera.position.set(startRoom.px, 6, startRoom.pz);
+                
+                GAME.active = true;
+            }, 2000);
+        } else {
+            // Game Over beneran
+            setTimeout(() => {
+                document.getElementById('gameover-text').style.display = 'block';
+                setTimeout(() => location.reload(), 3000);
+            }, 1000);
+        }
+    }
+
+    // --- RENDER LOOP ---
+    const raycaster = new THREE.Raycaster();
+    const centerVec = new THREE.Vector2(0, 0);
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        let dt = clock.getDelta();
+
+        if(GAME.active) {
+            // Edge Panning (PC)
+            if(!GAME.computerOpen) {
+                let w = window.innerWidth, h = window.innerHeight;
+                if(mouseX < w * 0.15) yaw += 2.0 * dt;
+                if(mouseX > w * 0.85) yaw -= 2.0 * dt;
+                if(mouseY < h * 0.15) pitch += 1.5 * dt;
+                if(mouseY > h * 0.85) pitch -= 1.5 * dt;
+                pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
+            }
+
+            // Raycasting
+            raycaster.setFromCamera(centerVec, camera);
+            const validTargets = allInteractables.filter(obj => {
+                if(obj.userData.type === 'move' && obj.userData.from === GAME.currentNode) return true;
+                if(obj.userData.type === 'gen' && obj.userData.node === GAME.currentNode) return true;
+                if(obj.userData.type === 'computer' && obj.userData.node === GAME.currentNode) return true;
+                return false;
+            });
+
+            const intersects = raycaster.intersectObjects(validTargets);
+            hoveredObj = intersects.length > 0 ? intersects[0].object : null;
+
+            // UI Interact
+            const ui = document.getElementById('interact-ui');
+            if(hoveredObj && !GAME.computerOpen) {
+                ui.style.display = 'block';
+                document.getElementById('interact-text').innerText = hoveredObj.userData.text;
+                
+                let barBg = document.getElementById('charge-bar-bg');
+                if(hoveredObj.userData.type === 'gen') {
+                    barBg.style.display = 'block';
+                    let tGen = gens.find(g => g.id === hoveredObj.userData.id);
+                    document.getElementById('charge-bar-fill').style.width = tGen.power + '%';
+                    document.getElementById('charge-bar-fill').style.background = tGen.power > 50 ? '#00ff00' : (tGen.power > 25 ? '#ffff00' : '#ff0000');
+                } else barBg.style.display = 'none';
+            } else ui.style.display = 'none';
+
+            // SISTEM WAKTU (Jam)
+            if(GAME.drainRate > 0) {
+                GAME.timeSeconds += dt;
+                // 360 detik (6 menit) = 6 Jam Game (12 AM - 6 AM)
+                let hoursPassed = Math.floor(GAME.timeSeconds / 60);
+                let displayHour = hoursPassed === 0 ? 12 : hoursPassed;
+                document.getElementById('clock-ui').innerText = `${displayHour}:00 AM`;
+
+                if(hoursPassed >= 6) {
+                    GAME.active = false;
+                    document.getElementById('win-screen').style.display = 'flex';
+                }
+            }
+
+            // SISTEM GENERATOR
+            gens.forEach(g => {
+                if(GAME.chargingGen === g.id) {
+                    g.power += 30 * dt; 
+                    if(g.power > 100) g.power = 100;
+                } else {
+                    g.power -= GAME.drainRate * 1.8 * dt; 
+                }
+
+                // 3D Lamp Visual
+                let hex = g.power > 60 ? 0x00ff00 : (g.power > 25 ? 0xffff00 : 0xff0000);
+                let str = g.power > 60 ? '#00ff00' : (g.power > 25 ? '#ffff00' : '#ff0000');
+                
+                g.bulb.material.color.setHex(hex);
+                g.light.color.setHex(hex);
+                g.light.intensity = Math.max(0.1, (g.power/100) * 2);
+
+                // PC UI
+                let pcBar = document.getElementById(`bar-${g.id}`);
+                if(pcBar) {
+                    pcBar.style.width = Math.max(0, g.power) + '%';
+                    pcBar.style.background = str;
+                }
+
+                // MATI = JUMPSCARE
+                if(g.power <= 0 && GAME.drainRate > 0) {
+                    g.power = 0; // Kunci di 0 biar ga loop terus
+                    triggerJumpscare(g.id);
+                }
+            });
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+</script>
+</body>
+</html>
